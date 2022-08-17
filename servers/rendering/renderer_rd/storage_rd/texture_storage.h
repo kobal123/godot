@@ -39,6 +39,7 @@
 #include "servers/rendering/rendering_server_default.h"
 #include "servers/rendering/storage/texture_storage.h"
 #include "servers/rendering/storage/utilities.h"
+#include <stdint.h>
 
 namespace RendererRD {
 
@@ -468,6 +469,12 @@ public:
 	virtual void texture_2d_layered_initialize(RID p_texture, const Vector<Ref<Image>> &p_layers, RS::TextureLayeredType p_layered_type) override;
 	virtual void texture_3d_initialize(RID p_texture, Image::Format, int p_width, int p_height, int p_depth, bool p_mipmaps, const Vector<Ref<Image>> &p_data) override;
 	virtual void texture_proxy_initialize(RID p_texture, RID p_base) override; //all slices, then all the mipmaps, must be coherent
+
+	virtual void texture_2d_with_usage_initialize(RID p_texture, const Ref<Image> &p_image, uint32_t p_usage_bits) override;
+	virtual void texture_2d_layered_with_usage_initialize(RID p_texture, const Vector<Ref<Image>> &p_layers, RS::TextureLayeredType p_layered_type, uint32_t p_usage_bits) override;
+	virtual void texture_3d_with_usage_initialize(RID p_texture, Image::Format, int p_width, int p_height, int p_depth, bool p_mipmaps, const Vector<Ref<Image>> &p_data, uint32_t p_usage_bits) override;
+
+	virtual RID texture_get_rd_rid(RID p_texture) const override;
 
 	virtual void texture_2d_update(RID p_texture, const Ref<Image> &p_image, int p_layer = 0) override;
 	virtual void texture_3d_update(RID p_texture, const Vector<Ref<Image>> &p_data) override;
