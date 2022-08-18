@@ -42,7 +42,6 @@
 #include "scene/resources/gradient.h"
 #include "servers/camera_server.h"
 #include "servers/rendering_server.h"
-#include <stdint.h>
 
 class Texture : public Resource {
 	GDCLASS(Texture, Resource);

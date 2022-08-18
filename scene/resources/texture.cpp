@@ -38,14 +38,13 @@
 #include "scene/resources/bit_map.h"
 #include "scene/resources/mesh.h"
 #include "servers/camera/camera_feed.h"
-#include <stdint.h>
 
 RID Texture::get_rd_texture_rid() const {
 	return RenderingServer::get_singleton()->texture_get_rd_rid(get_rid());
 }
 
 void Texture::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_rd_texture_rid"), &ImageTexture::get_rd_texture_rid);
+	ClassDB::bind_method(D_METHOD("get_rd_texture_rid"), &Texture::get_rd_texture_rid);
 }
 
 
