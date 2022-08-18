@@ -35,7 +35,6 @@
 #include "servers/rendering/renderer_rd/shaders/canvas_sdf.glsl.gen.h"
 #include "servers/rendering/storage/texture_storage.h"
 #include "servers/rendering/storage/utilities.h"
-#include <stdint.h>
 
 namespace RendererRD {
 

@@ -41,7 +41,6 @@
 #include "core/variant/variant.h"
 #include "servers/display_server.h"
 #include "servers/rendering/rendering_device.h"
-#include <stdint.h>
 
 class RenderingServer : public Object {
 	GDCLASS(RenderingServer, Object);

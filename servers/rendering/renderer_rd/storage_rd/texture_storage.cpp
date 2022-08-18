@@ -31,7 +31,6 @@
 #include "texture_storage.h"
 #include "../effects/copy_effects.h"
 #include "material_storage.h"
-#include <stdint.h>
 
 using namespace RendererRD;
 
