@@ -1296,7 +1296,7 @@ public:
 	virtual void canvas_set_disable_scale(bool p_disable) = 0;
 
 	/* CANVAS TEXTURE */
-	virtual RID canvas_texture_create() = 0;
+	virtual RID texture_2d_with_usage_create() = 0;
 
 	enum CanvasTextureChannel {
 		CANVAS_TEXTURE_CHANNEL_DIFFUSE,
