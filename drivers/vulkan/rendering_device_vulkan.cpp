@@ -5566,7 +5566,7 @@ RID RenderingDeviceVulkan::uniform_set_create(const Vector<Uniform> &p_uniforms,
 					Texture *texture = texture_owner.get_or_null(uniform.get_id(j));
 
 					ERR_FAIL_COND_V_MSG(!texture, RID(),
-							"Image (binding: " + itos(uniform.binding) + ", index " + itos(j) + ") is not a valid texture.");
+							"Image (binding: " + itos(uniform.binding) + ", index " + itos(j) + ") is not a valid texture." + " RID was " + itos(uniform.get_id(j).get_id()) + ", total items in texture owner: " + itos(texture_owner.get_rid_count()));
 
 					ERR_FAIL_COND_V_MSG(!(texture->usage_flags & TEXTURE_USAGE_STORAGE_BIT), RID(),
 							"Image (binding: " + itos(uniform.binding) + ", index " + itos(j) + ") needs the TEXTURE_USAGE_STORAGE_BIT usage flag set in order to be used as uniform.");

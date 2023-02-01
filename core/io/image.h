@@ -223,6 +223,7 @@ public:
 	Size2i get_size() const;
 	bool has_mipmaps() const;
 	int get_mipmap_count() const;
+	uint8_t* get_data_ptr();
 
 	/**
 	 * Convert the image to another format, conversion only to raw byte format
