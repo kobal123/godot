@@ -881,6 +881,7 @@ void TextureStorage::texture_2d_layered_with_usage_initialize(RID p_texture, con
 		data_slices.push_back(data);
 	}
 	texture.rd_texture = RD::get_singleton()->texture_create(rd_format, rd_view, data_slices);
+	//print_line("CREATED RD TEXTURE WITH RID: " + itos(texture.rd_texture.get_id()));
 	ERR_FAIL_COND(texture.rd_texture.is_null());
 	if (texture.rd_format_srgb != RD::DATA_FORMAT_MAX) {
 		rd_view.format_override = texture.rd_format_srgb;
@@ -1371,7 +1372,7 @@ Size2 TextureStorage::texture_size_with_proxy(RID p_proxy) {
 RID TextureStorage::texture_get_rd_texture_rid(RID p_texture, bool p_srgb) const {
 	Texture *tex = texture_owner.get_or_null(p_texture);
 	ERR_FAIL_COND_V(!tex, RID());
-
+	
 	return (p_srgb && tex->rd_texture_srgb.is_valid()) ? tex->rd_texture_srgb : tex->rd_texture;
 }
 
