@@ -71,6 +71,8 @@ public:
 	virtual void texture_3d_initialize(RID p_texture, Image::Format, int p_width, int p_height, int p_depth, bool p_mipmaps, const Vector<Ref<Image>> &p_data) = 0;
 	virtual void texture_proxy_initialize(RID p_texture, RID p_base) = 0; //all slices, then all the mipmaps, must be coherent
 
+	virtual void texture_2d_with_usage_empty_from_rd_rid_initialize(RID p_texture, Image::Format, int p_width, int p_height,  uint32_t p_usage_bits, RID rd_texture_id)= 0;
+
 	virtual void texture_2d_with_usage_initialize(RID p_texture, const Ref<Image> &p_image, uint32_t p_usage_bits) = 0;
 	virtual void texture_2d_layered_with_usage_initialize(RID p_texture, const Vector<Ref<Image>> &p_layers, RS::TextureLayeredType p_layered_type, uint32_t p_usage_bits) = 0;
 	virtual void texture_3d_with_usage_initialize(RID p_texture, Image::Format, int p_width, int p_height, int p_depth, bool p_mipmaps, const Vector<Ref<Image>> &p_data, uint32_t p_usage_bits) = 0;

@@ -1105,6 +1105,10 @@ Size2 TextureStorage::texture_size_with_proxy(RID p_texture) {
 	}
 }
 
+//TODO: IMPLEMENT
+void TextureStorage::texture_2d_with_usage_empty_from_rd_rid_initialize(RID p_texture,Image::Format format, int p_width, int p_height, uint32_t p_usage_bits, RID rd_texture_id){
+}
+
 RID TextureStorage::texture_get_rd_texture_rid(RID p_texture, bool p_srgb) const {
 	return RID();
 }

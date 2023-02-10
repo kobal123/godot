@@ -145,6 +145,12 @@ protected:
 
 public:
 	//base numeric ID for all types
+	bool update_texture_on_creation = true;
+
+	void set_texture_update_on_creation(bool val){
+		update_texture_on_creation = val;
+	}
+
 	enum {
 		INVALID_ID = -1,
 		INVALID_FORMAT_ID = -1

@@ -107,6 +107,8 @@ public:
 	virtual RID texture_3d_create(Image::Format, int p_width, int p_height, int p_depth, bool p_mipmaps, const Vector<Ref<Image>> &p_data) = 0; //all slices, then all the mipmaps, must be coherent
 	virtual RID texture_proxy_create(RID p_base) = 0;
 
+	virtual RID texture_2d_with_usage_empty_from_rd_rid_create(Image::Format, int p_width, int p_height, uint32_t p_usage_bits, RID rd_texture) = 0;
+
 	virtual RID texture_2d_with_usage_create(const Ref<Image> &p_image, uint32_t p_usage_bits) = 0;
 	virtual RID texture_2d_layered_with_usage_create(const Vector<Ref<Image>> &p_layers, TextureLayeredType p_layered_type, uint32_t p_usage_bits) = 0;
 	virtual RID texture_3d_with_usage_create(Image::Format, int p_width, int p_height, int p_depth, bool p_mipmaps, const Vector<Ref<Image>> &p_data, uint32_t p_usage_bits) = 0; //all slices, then all the mipmaps, must be coherent
@@ -1296,8 +1298,8 @@ public:
 	virtual void canvas_set_disable_scale(bool p_disable) = 0;
 
 	/* CANVAS TEXTURE */
-	virtual RID texture_2d_with_usage_create() = 0;
-
+	//virtual RID texture_2d_with_usage_create() = 0;
+	virtual RID canvas_texture_create() = 0;	
 	enum CanvasTextureChannel {
 		CANVAS_TEXTURE_CHANNEL_DIFFUSE,
 		CANVAS_TEXTURE_CHANNEL_NORMAL,

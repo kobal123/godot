@@ -785,6 +785,130 @@ void TextureStorage::texture_2d_with_usage_initialize(RID p_texture, const Ref<I
 	texture_owner.initialize_rid(p_texture, texture);
 }
 
+
+void TextureStorage::texture_2d_with_usage_empty_from_rd_rid_initialize(RID p_texture,Image::Format format, int p_width, int p_height, uint32_t p_usage_bits, RID rd_texture_id){
+
+	TextureToRDFormat r_format;
+	//Ref<Image> image = _validate_texture_format(p_image, ret_format);
+	//check format
+	switch (format) {
+	case Image::FORMAT_RGB8: {
+		//this format is not mandatory for specification, check if supported first
+		if (false && RD::get_singleton()->texture_is_format_supported_for_usage(RD::DATA_FORMAT_R8G8B8_UNORM, RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_CAN_UPDATE_BIT) && RD::get_singleton()->texture_is_format_supported_for_usage(RD::DATA_FORMAT_R8G8B8_SRGB, RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_CAN_UPDATE_BIT)) {
+			r_format.format = RD::DATA_FORMAT_R8G8B8_UNORM;
+			r_format.format_srgb = RD::DATA_FORMAT_R8G8B8_SRGB;
+		} else {
+			//not supported, reconvert
+			r_format.format = RD::DATA_FORMAT_R8G8B8A8_UNORM;
+			r_format.format_srgb = RD::DATA_FORMAT_R8G8B8A8_SRGB;
+		}
+		r_format.swizzle_r = RD::TEXTURE_SWIZZLE_R;
+		r_format.swizzle_g = RD::TEXTURE_SWIZZLE_G;
+		r_format.swizzle_b = RD::TEXTURE_SWIZZLE_B;
+		r_format.swizzle_a = RD::TEXTURE_SWIZZLE_ONE;
+
+	} break;
+
+	case Image::FORMAT_RGBA8: {
+		r_format.format = RD::DATA_FORMAT_R8G8B8A8_UNORM;
+		r_format.format_srgb = RD::DATA_FORMAT_R8G8B8A8_SRGB;
+		r_format.swizzle_r = RD::TEXTURE_SWIZZLE_R;
+		r_format.swizzle_g = RD::TEXTURE_SWIZZLE_G;
+		r_format.swizzle_b = RD::TEXTURE_SWIZZLE_B;
+		r_format.swizzle_a = RD::TEXTURE_SWIZZLE_A;
+	} break;
+			case Image::FORMAT_RGBF: {
+			//this format is not mandatory for specification, check if supported first
+			if (RD::get_singleton()->texture_is_format_supported_for_usage(RD::DATA_FORMAT_R32G32B32_SFLOAT, RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_CAN_UPDATE_BIT)) {
+				r_format.format = RD::DATA_FORMAT_R32G32B32_SFLOAT;
+			} else {
+				//not supported, reconvert
+				r_format.format = RD::DATA_FORMAT_R32G32B32A32_SFLOAT;
+				// image->convert(Image::FORMAT_RGBAF);
+			}
+
+			r_format.swizzle_r = RD::TEXTURE_SWIZZLE_R;
+			r_format.swizzle_g = RD::TEXTURE_SWIZZLE_G;
+			r_format.swizzle_b = RD::TEXTURE_SWIZZLE_B;
+			r_format.swizzle_a = RD::TEXTURE_SWIZZLE_ONE;
+		} break;
+		case Image::FORMAT_RGBAF: {
+			r_format.format = RD::DATA_FORMAT_R32G32B32A32_SFLOAT;
+			r_format.swizzle_r = RD::TEXTURE_SWIZZLE_R;
+			r_format.swizzle_g = RD::TEXTURE_SWIZZLE_G;
+			r_format.swizzle_b = RD::TEXTURE_SWIZZLE_B;
+			r_format.swizzle_a = RD::TEXTURE_SWIZZLE_A;
+
+		} break;
+	
+		default: {
+		}
+	};
+
+	Texture texture;
+
+	texture.type = TextureStorage::TYPE_2D;
+
+	texture.width = p_width;
+	texture.height = p_height;
+	texture.layers = 1;
+	//TODO: THIS MIGHT BE BAD
+	texture.mipmaps = 1;
+	texture.depth = 1;
+	texture.format = format;
+	texture.validated_format = format/*image->get_format()*/;
+
+	texture.rd_type = RD::TEXTURE_TYPE_2D;
+	texture.rd_format = r_format.format;
+	texture.rd_format_srgb = r_format.format_srgb;
+
+	RD::TextureFormat rd_format;
+	RD::TextureView rd_view;
+	{ //attempt register
+		rd_format.format = texture.rd_format;
+		rd_format.width = texture.width;
+		rd_format.height = texture.height;
+		rd_format.depth = 1;
+		rd_format.array_layers = 1;
+		rd_format.mipmaps = texture.mipmaps;
+		rd_format.texture_type = texture.rd_type;
+		rd_format.samples = RD::TEXTURE_SAMPLES_1;
+		rd_format.usage_bits = p_usage_bits;
+		if (texture.rd_format_srgb != RD::DATA_FORMAT_MAX) {
+			rd_format.shareable_formats.push_back(texture.rd_format);
+			rd_format.shareable_formats.push_back(texture.rd_format_srgb);
+		}
+	}
+	{
+		rd_view.swizzle_r = r_format.swizzle_r;
+		rd_view.swizzle_g = r_format.swizzle_g;
+		rd_view.swizzle_b = r_format.swizzle_b;
+		rd_view.swizzle_a = r_format.swizzle_a;
+	}
+
+	texture.rd_texture = rd_texture_id /*RD::get_singleton()->texture_create(rd_format, rd_view, data_slices)*/;
+	ERR_FAIL_COND(texture.rd_texture.is_null());
+	if (texture.rd_format_srgb != RD::DATA_FORMAT_MAX) {
+		rd_view.format_override = texture.rd_format_srgb;
+		texture.rd_texture_srgb = RD::get_singleton()->texture_create_shared(rd_view, texture.rd_texture);
+		if (texture.rd_texture_srgb.is_null()) {
+			RD::get_singleton()->free(texture.rd_texture);
+			ERR_FAIL_COND(texture.rd_texture_srgb.is_null());
+		}
+	}
+
+	//used for 2D, overridable
+	texture.width_2d = texture.width;
+	texture.height_2d = texture.height;
+	texture.is_render_target = false;
+	texture.rd_view = rd_view;
+	texture.is_proxy = false;
+
+	texture_owner.initialize_rid(p_texture, texture);
+
+}
+
+
 void TextureStorage::texture_2d_layered_initialize(RID p_texture, const Vector<Ref<Image>> &p_layers, RS::TextureLayeredType p_layered_type) {
 	texture_2d_layered_with_usage_initialize(p_texture, p_layers, p_layered_type, RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_CAN_UPDATE_BIT | RD::TEXTURE_USAGE_CAN_COPY_FROM_BIT);
 }

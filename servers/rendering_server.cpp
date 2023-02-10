@@ -700,6 +700,10 @@ Error RenderingServer::_surface_set_data(Array p_arrays, uint32_t p_format, uint
 	return OK;
 }
 
+
+
+
+
 uint32_t RenderingServer::mesh_surface_get_format_offset(BitField<ArrayFormat> p_format, int p_vertex_len, int p_array_index) const {
 	ERR_FAIL_INDEX_V(p_array_index, ARRAY_MAX, 0);
 	p_format = int64_t(p_format) & ~ARRAY_FORMAT_INDEX;
@@ -1501,6 +1505,8 @@ RID RenderingServer::_texture_3d_create(Image::Format p_format, int p_width, int
 RID RenderingServer::_texture_2d_layered_with_usage_create(const TypedArray<Image> &p_layers, TextureLayeredType p_layered_type, uint32_t p_usage_bits) {
 	return texture_2d_layered_with_usage_create(_get_imgvec(p_layers), p_layered_type, p_usage_bits);
 }
+
+
 RID RenderingServer::_texture_3d_with_usage_create(Image::Format p_format, int p_width, int p_height, int p_depth, bool p_mipmaps, const TypedArray<Image> &p_data, uint32_t p_usage_bits) {
 	return texture_3d_with_usage_create(p_format, p_width, p_height, p_depth, p_mipmaps, _get_imgvec(p_data), p_usage_bits);
 }
@@ -1682,6 +1688,9 @@ void RenderingServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("texture_2d_layered_create", "layers", "layered_type"), &RenderingServer::_texture_2d_layered_create);
 	ClassDB::bind_method(D_METHOD("texture_3d_create", "format", "width", "height", "depth", "mipmaps", "data"), &RenderingServer::_texture_3d_create);
 	ClassDB::bind_method(D_METHOD("texture_proxy_create", "base"), &RenderingServer::texture_proxy_create);
+
+	ClassDB::bind_method(D_METHOD("texture_2d_with_usage_empty_from_rd_rid_create", "format", "width", "height", "usage_bits", "rd_texture_rid"), &RenderingServer::texture_2d_with_usage_empty_from_rd_rid_create);
+
 
 	ClassDB::bind_method(D_METHOD("texture_2d_with_usage_create", "image", "usage_bits"), &RenderingServer::texture_2d_with_usage_create);
 	ClassDB::bind_method(D_METHOD("texture_2d_layered_with_usage_create", "layers", "layered_type", "usage_bits"), &RenderingServer::_texture_2d_layered_with_usage_create);

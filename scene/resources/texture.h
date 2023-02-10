@@ -119,7 +119,8 @@ public:
 	void set_image_with_usage(const Ref<Image> &p_image, uint32_t usage_bits);
 	static Ref<ImageTexture> create_from_image(const Ref<Image> &p_image);
 	static Ref<ImageTexture> create_from_image_with_usage(const Ref<Image> &p_image, uint32_t usage_bits);
-
+	static Ref<ImageTexture> create_empty_from_rd_texture_rid(Image::Format format, int height, int width, uint32_t usage_bits, RID rd_texture_rid);
+	
 	Image::Format get_format() const;
 
 	void update(const Ref<Image> &p_image);
