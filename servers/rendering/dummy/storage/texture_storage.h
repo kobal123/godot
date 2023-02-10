@@ -132,7 +132,8 @@ public:
 
 	virtual Size2 texture_size_with_proxy(RID p_proxy) override { return Size2(); };
 
-	virtual RID texture_get_rd_texture(RID p_texture, bool p_srgb = false) const override { return RID(); };
+	virtual RID texture_get_rd_texture_rid(RID p_texture, bool p_srgb = false) const override { return RID(); };
+	virtual void texture_2d_with_usage_empty_from_rd_rid_initialize(RID p_texture, Image::Format, int p_width, int p_height, uint32_t p_usage_bits, RID rd_texture_id) override{};
 
 	/* DECAL API */
 	virtual RID decal_allocate() override { return RID(); }

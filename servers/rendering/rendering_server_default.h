@@ -176,6 +176,17 @@ public:
 		return ret;                                                                                                  \
 	}
 
+#define FUNCRIDTEX5(m_type, m_type1, m_type2, m_type3, m_type4, m_type5)                                                               \
+	virtual RID m_type##_create(m_type1 p1, m_type2 p2, m_type3 p3, m_type4 p4, m_type5 p5) override {                                       \
+		RID ret = RSG::texture_storage->texture_allocate();                                                          \
+		if (Thread::get_caller_id() == server_thread || RSG::texture_storage->can_create_resources_async()) {        \
+			RSG::texture_storage->m_type##_initialize(ret, p1, p2, p3, p4, p5);                                              \
+		} else {                                                                                                     \
+			command_queue.push(RSG::texture_storage, &RendererTextureStorage::m_type##_initialize, ret, p1, p2, p3, p4, p5); \
+		}                                                                                                            \
+		return ret;                                                                                                  \
+	}
+
 #define FUNCRIDTEX6(m_type, m_type1, m_type2, m_type3, m_type4, m_type5, m_type6)                                                \
 	virtual RID m_type##_create(m_type1 p1, m_type2 p2, m_type3 p3, m_type4 p4, m_type5 p5, m_type6 p6) override {               \
 		RID ret = RSG::texture_storage->texture_allocate();                                                                      \
@@ -203,7 +214,7 @@ public:
 	FUNCRIDTEX2(texture_2d_layered, const Vector<Ref<Image>> &, TextureLayeredType)
 	FUNCRIDTEX6(texture_3d, Image::Format, int, int, int, bool, const Vector<Ref<Image>> &)
 	FUNCRIDTEX1(texture_proxy, RID)
-
+	FUNCRIDTEX5(texture_2d_with_usage_empty_from_rd_rid, Image::Format,int ,int, uint32_t, RID)
 	FUNCRIDTEX2(texture_2d_with_usage, const Ref<Image> &, uint32_t)
 	FUNCRIDTEX3(texture_2d_layered_with_usage, const Vector<Ref<Image>> &, TextureLayeredType, uint32_t)
 	FUNCRIDTEX7(texture_3d_with_usage, Image::Format, int, int, int, bool, const Vector<Ref<Image>> &, uint32_t)

@@ -1817,11 +1817,13 @@ RID RenderingDeviceVulkan::texture_create(const TextureFormat &p_format, const T
 		}
 
 		if (p_format.usage_bits & TEXTURE_USAGE_SAMPLING_BIT && !(flags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)) {
-			ERR_FAIL_V_MSG(RID(), "Format " + format_text + " does not support usage as sampling texture.");
+			if(p_format.format != DATA_FORMAT_R32G32B32_SFLOAT)
+
+				ERR_FAIL_V_MSG(RID(), "Format " + format_text + " does not support usage as sampling texture.");
 		}
 
 		if (p_format.usage_bits & TEXTURE_USAGE_COLOR_ATTACHMENT_BIT && !(flags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) {
-			ERR_FAIL_V_MSG(RID(), "Format " + format_text + " does not support usage as color attachment.");
+				ERR_FAIL_V_MSG(RID(), "Format " + format_text + " does not support usage as color attachment.");
 		}
 
 		if (p_format.usage_bits & TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT && !(flags & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
@@ -2011,11 +2013,14 @@ RID RenderingDeviceVulkan::texture_create(const TextureFormat &p_format, const T
 	set_resource_name(id, "RID:" + itos(id.get_id()));
 #endif
 
-	if (p_data.size()) {
+	if (p_data.size() && update_texture_on_creation) {
 		for (uint32_t i = 0; i < image_create_info.arrayLayers; i++) {
 			_texture_update(id, i, p_data[i], RD::BARRIER_MASK_ALL_BARRIERS, true);
 		}
 	}
+		String format_text = "'" + String(named_formats[p_format.format]) + "'";
+	
+	print_line("texture format is " + format_text);
 	return id;
 }
 
@@ -4260,6 +4265,8 @@ void RenderingDeviceVulkan::framebuffer_set_invalidation_callback(RID p_framebuf
 /*****************/
 /**** SAMPLER ****/
 /*****************/
+
+
 
 RID RenderingDeviceVulkan::sampler_create(const SamplerState &p_state) {
 	_THREAD_SAFE_METHOD_

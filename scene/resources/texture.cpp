@@ -189,6 +189,35 @@ Ref<ImageTexture> ImageTexture::create_from_image_with_usage(const Ref<Image> &p
 	return image_texture;
 }
 
+Ref<ImageTexture> ImageTexture::create_empty_from_rd_texture_rid(Image::Format format_, int height, int width, uint32_t usage_bits, RID rd_texture_rid){
+	Ref<ImageTexture> image_texture;
+	image_texture.instantiate();
+	image_texture->w = width;
+	image_texture->h = height;
+	image_texture->format = format_;
+
+	RID new_texture{};
+
+	new_texture = RenderingServer::get_singleton()->texture_2d_with_usage_empty_from_rd_rid_create(format_,width,height,usage_bits,rd_texture_rid);
+
+	if (image_texture->texture.is_null()) {
+		image_texture->texture = new_texture;
+	} else {
+		RenderingServer::get_singleton()->texture_replace(image_texture->texture, new_texture);
+	}
+
+
+
+
+	image_texture->notify_property_list_changed();
+	image_texture->emit_changed();
+
+	image_texture->image_stored = true;
+	return image_texture;
+}
+
+
+
 void ImageTexture::set_image(const Ref<Image> &p_image) {
 	set_image_with_usage(p_image, 0);
 }
@@ -345,6 +374,8 @@ void ImageTexture::set_path(const String &p_path, bool p_take_over) {
 void ImageTexture::_bind_methods() {
 	ClassDB::bind_static_method("ImageTexture", D_METHOD("create_from_image", "image"), &ImageTexture::create_from_image);
 	ClassDB::bind_static_method("ImageTexture", D_METHOD("create_from_image_with_usage", "image", "usage_bits"), &ImageTexture::create_from_image_with_usage);
+	ClassDB::bind_static_method("ImageTexture", D_METHOD("create_from_image_with_usage_empty","format","height","width", "usage_bits","rd_texture"), &ImageTexture::create_empty_from_rd_texture_rid);
+
 	ClassDB::bind_method(D_METHOD("get_format"), &ImageTexture::get_format);
 
 	ClassDB::bind_method(D_METHOD("set_image", "image"), &ImageTexture::set_image);
