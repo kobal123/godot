@@ -2025,9 +2025,9 @@ RID RenderingDeviceVulkan::texture_create(const TextureFormat &p_format, const T
 			_texture_update(id, i, p_data[i], RD::BARRIER_MASK_ALL_BARRIERS, true);
 		}
 	}
-		String format_text = "'" + String(named_formats[p_format.format]) + "'";
+		//String format_text = "'" + String(named_formats[p_format.format]) + "'";
 	
-	print_line("texture format is " + format_text);
+	//print_line("texture format is " + format_text);
 	return id;
 }
 
