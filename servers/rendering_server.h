@@ -72,7 +72,9 @@ protected:
 public:
 	static RenderingServer *get_singleton();
 	static RenderingServer *create();
-
+	bool load_32_bits = true;
+    void bits32();
+    void bits16();
 	enum {
 		NO_INDEX_ARRAY = -1,
 		ARRAY_WEIGHTS_SIZE = 4,

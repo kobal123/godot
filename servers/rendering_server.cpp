@@ -1674,6 +1674,16 @@ void RenderingServer::_particles_set_trail_bind_poses(RID p_particles, const Typ
 	particles_set_trail_bind_poses(p_particles, tbposes);
 }
 
+void RenderingServer::bits32()
+{
+	load_32_bits = true;
+}
+
+void RenderingServer::bits16()
+{
+	load_32_bits = false;
+}
+
 void RenderingServer::_bind_methods() {
 	BIND_CONSTANT(NO_INDEX_ARRAY);
 	BIND_CONSTANT(ARRAY_WEIGHTS_SIZE);
@@ -1682,6 +1692,9 @@ void RenderingServer::_bind_methods() {
 	BIND_CONSTANT(MAX_GLOW_LEVELS);
 	BIND_CONSTANT(MAX_CURSORS);
 	BIND_CONSTANT(MAX_2D_DIRECTIONAL_LIGHTS);
+
+    ClassDB::bind_method(D_METHOD("bits32"), &RenderingServer::bits32);
+	ClassDB::bind_method(D_METHOD("bits16"), &RenderingServer::bits16);
 
 	/* TEXTURE */
 

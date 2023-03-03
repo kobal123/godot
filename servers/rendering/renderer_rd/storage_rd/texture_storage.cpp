@@ -915,6 +915,14 @@ void TextureStorage::texture_2d_with_usage_empty_from_rd_rid_initialize(RID p_te
 			r_format.swizzle_a = RD::TEXTURE_SWIZZLE_A;
 
 		} break;
+		case Image::FORMAT_RGBAH: {
+			r_format.format = RD::DATA_FORMAT_R16G16B16A16_SFLOAT;
+			r_format.swizzle_r = RD::TEXTURE_SWIZZLE_R;
+			r_format.swizzle_g = RD::TEXTURE_SWIZZLE_G;
+			r_format.swizzle_b = RD::TEXTURE_SWIZZLE_B;
+			r_format.swizzle_a = RD::TEXTURE_SWIZZLE_A;
+
+		} break;
 	
 		default: {
 		}
