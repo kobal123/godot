@@ -789,6 +789,22 @@ RID TextureStorage::texture_get_rd_rid(RID p_texture) const {
 	return RID();
 }
 
+void TextureStorage::texture_2d_with_usage_initialize(RID p_texture, const Ref<Image> &p_image, uint32_t p_usage_bits) {
+	texture_2d_initialize(p_texture, p_image);
+}
+
+void TextureStorage::texture_2d_layered_with_usage_initialize(RID p_texture, const Vector<Ref<Image>> &p_layers, RS::TextureLayeredType p_layered_type, uint32_t p_usage_bits) {
+	texture_2d_layered_initialize(p_texture, p_layers, p_layered_type);
+}
+
+void TextureStorage::texture_3d_with_usage_initialize(RID p_texture, Image::Format p_format, int p_width, int p_height, int p_depth, bool p_mipmaps, const Vector<Ref<Image>> &p_data, uint32_t p_usage_bits) {
+	texture_3d_initialize(p_texture, p_format, p_width, p_height, p_depth, p_mipmaps, p_data);
+}
+
+RID TextureStorage::texture_get_rd_rid(RID p_texture) const {
+	return RID();
+}
+
 RID TextureStorage::texture_create_external(Texture::Type p_type, Image::Format p_format, unsigned int p_image, int p_width, int p_height, int p_depth, int p_layers, RS::TextureLayeredType p_layered_type) {
 	Texture texture;
 	texture.active = true;
@@ -1151,6 +1167,8 @@ Size2 TextureStorage::texture_size_with_proxy(RID p_texture) {
 		return Size2(texture->width, texture->height);
 	}
 }
+
+
 
 //TODO: IMPLEMENT
 void TextureStorage::texture_2d_with_usage_empty_from_rd_rid_initialize(RID p_texture,Image::Format format, int p_width, int p_height, uint32_t p_usage_bits, RID rd_texture_id){

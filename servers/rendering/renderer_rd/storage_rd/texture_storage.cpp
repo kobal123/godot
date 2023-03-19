@@ -1589,7 +1589,7 @@ RID TextureStorage::texture_get_rd_texture(RID p_texture, bool p_srgb) const {
 	if (!tex) {
 		return RID();
 		}
-
+	
 	return (p_srgb && tex->rd_texture_srgb.is_valid()) ? tex->rd_texture_srgb : tex->rd_texture;
 }
 
