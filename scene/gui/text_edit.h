@@ -37,6 +37,7 @@
 #include "scene/main/timer.h"
 #include "scene/resources/syntax_highlighter.h"
 #include "scene/resources/text_paragraph.h"
+#include "modules/imageedittexture/text_image_texture.h"
 
 class TextEdit : public Control {
 	GDCLASS(TextEdit, Control);
@@ -121,7 +122,7 @@ public:
 		SEARCH_BACKWARDS = 4
 	};
 
-private:
+protected:
 	struct GutterInfo {
 		GutterType type = GutterType::GUTTER_TYPE_STRING;
 		String name = "";
@@ -133,128 +134,8 @@ private:
 		Callable custom_draw_callback;
 	};
 
-	class Text {
-	public:
-		struct Gutter {
-			Variant metadata;
-			bool clickable = false;
+	
 
-			Ref<Texture2D> icon = Ref<Texture2D>();
-			String text = "";
-			Color color = Color(1, 1, 1);
-		};
-
-		struct Line {
-			Vector<Gutter> gutters;
-
-			String data;
-			Array bidi_override;
-			Ref<TextParagraph> data_buf;
-
-			Color background_color = Color(0, 0, 0, 0);
-			bool hidden = false;
-			int height = 0;
-			int width = 0;
-
-			Line() {
-				data_buf.instantiate();
-			}
-		};
-
-	private:
-		bool is_dirty = false;
-		bool tab_size_dirty = false;
-
-		mutable Vector<Line> text;
-		Ref<Font> font;
-		int font_size = -1;
-		int font_height = 0;
-
-		String language;
-		TextServer::Direction direction = TextServer::DIRECTION_AUTO;
-		bool draw_control_chars = false;
-
-		int line_height = -1;
-		int max_width = -1;
-		int width = -1;
-
-		int tab_size = 4;
-		int gutter_count = 0;
-
-		void _calculate_line_height();
-		void _calculate_max_line_width();
-
-	public:
-		void set_tab_size(int p_tab_size);
-		int get_tab_size() const;
-		void set_font(const Ref<Font> &p_font);
-		void set_font_size(int p_font_size);
-		void set_direction_and_language(TextServer::Direction p_direction, const String &p_language);
-		void set_draw_control_chars(bool p_enabled);
-
-		int get_line_height() const;
-		int get_line_width(int p_line, int p_wrap_index = -1) const;
-		int get_max_width() const;
-
-		void set_width(float p_width);
-		float get_width() const;
-		int get_line_wrap_amount(int p_line) const;
-
-		Vector<Vector2i> get_line_wrap_ranges(int p_line) const;
-		const Ref<TextParagraph> get_line_data(int p_line) const;
-
-		void set(int p_line, const String &p_text, const Array &p_bidi_override);
-		void set_hidden(int p_line, bool p_hidden) {
-			if (text[p_line].hidden == p_hidden) {
-				return;
-			}
-			text.write[p_line].hidden = p_hidden;
-			if (!p_hidden && text[p_line].width > max_width) {
-				max_width = text[p_line].width;
-			} else if (p_hidden && text[p_line].width == max_width) {
-				_calculate_max_line_width();
-			}
-		}
-		bool is_hidden(int p_line) const { return text[p_line].hidden; }
-		void insert(int p_at, const Vector<String> &p_text, const Vector<Array> &p_bidi_override);
-		void remove_range(int p_from_line, int p_to_line);
-		int size() const { return text.size(); }
-		void clear();
-
-		void invalidate_cache(int p_line, int p_column = -1, bool p_text_changed = false, const String &p_ime_text = String(), const Array &p_bidi_override = Array());
-		void invalidate_font();
-		void invalidate_all();
-		void invalidate_all_lines();
-
-		_FORCE_INLINE_ const String &operator[](int p_line) const;
-
-		/* Gutters. */
-		void add_gutter(int p_at);
-		void remove_gutter(int p_gutter);
-		void move_gutters(int p_from_line, int p_to_line);
-
-		void set_line_gutter_metadata(int p_line, int p_gutter, const Variant &p_metadata) { text.write[p_line].gutters.write[p_gutter].metadata = p_metadata; }
-		const Variant &get_line_gutter_metadata(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].metadata; }
-
-		void set_line_gutter_text(int p_line, int p_gutter, const String &p_text) { text.write[p_line].gutters.write[p_gutter].text = p_text; }
-		const String &get_line_gutter_text(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].text; }
-
-		void set_line_gutter_icon(int p_line, int p_gutter, const Ref<Texture2D> &p_icon) { text.write[p_line].gutters.write[p_gutter].icon = p_icon; }
-		const Ref<Texture2D> &get_line_gutter_icon(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].icon; }
-
-		void set_line_gutter_item_color(int p_line, int p_gutter, const Color &p_color) { text.write[p_line].gutters.write[p_gutter].color = p_color; }
-		const Color &get_line_gutter_item_color(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].color; }
-
-		void set_line_gutter_clickable(int p_line, int p_gutter, bool p_clickable) { text.write[p_line].gutters.write[p_gutter].clickable = p_clickable; }
-		bool is_line_gutter_clickable(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].clickable; }
-
-		/* Line style. */
-		void set_line_background_color(int p_line, const Color &p_color) { text.write[p_line].background_color = p_color; }
-		const Color get_line_background_color(int p_line) const { return text[p_line].background_color; }
-	};
-
-	/* Text */
-	Text text;
 
 	bool setting_text = false;
 
@@ -607,6 +488,131 @@ private:
 
 protected:
 	void _notification(int p_what);
+	/* Text */
+	class Text {
+		public:
+			struct Gutter {
+				Variant metadata;
+				bool clickable = false;
+
+				Ref<Texture2D> icon = Ref<Texture2D>();
+				String text = "";
+				Color color = Color(1, 1, 1);
+			};
+
+			struct Line {
+				Vector<Gutter> gutters;
+
+				String data;
+				Array bidi_override;
+				Ref<TextParagraph> data_buf;
+
+				Color background_color = Color(0, 0, 0, 0);
+				bool hidden = false;
+				int height = 0;
+				int width = 0;
+
+				Line() {
+					data_buf.instantiate();
+				}
+			};
+
+		private:
+			bool is_dirty = false;
+			bool tab_size_dirty = false;
+
+			mutable Vector<Line> text;
+			Ref<Font> font;
+			int font_size = -1;
+			int font_height = 0;
+
+			String language;
+			TextServer::Direction direction = TextServer::DIRECTION_AUTO;
+			bool draw_control_chars = false;
+
+			int line_height = -1;
+			int max_width = -1;
+			int width = -1;
+
+			int tab_size = 4;
+			int gutter_count = 0;
+
+			void _calculate_line_height();
+			void _calculate_max_line_width();
+
+		public:
+			void set_tab_size(int p_tab_size);
+			int get_tab_size() const;
+			void set_font(const Ref<Font> &p_font);
+			void set_font_size(int p_font_size);
+			void set_direction_and_language(TextServer::Direction p_direction, const String &p_language);
+			void set_draw_control_chars(bool p_enabled);
+
+			int get_line_height() const;
+			int get_line_width(int p_line, int p_wrap_index = -1) const;
+			int get_max_width() const;
+
+			void set_width(float p_width);
+			float get_width() const;
+			int get_line_wrap_amount(int p_line) const;
+
+			Vector<Vector2i> get_line_wrap_ranges(int p_line) const;
+			const Ref<TextParagraph> get_line_data(int p_line) const;
+
+			void set(int p_line, const String &p_text, const Array &p_bidi_override);
+			void set_img(int p_line, const String &p_text, const Ref<Texture2D> &img, const Array &p_bidi_override);
+
+			void set_hidden(int p_line, bool p_hidden) {
+				if (text[p_line].hidden == p_hidden) {
+					return;
+				}
+				text.write[p_line].hidden = p_hidden;
+				if (!p_hidden && text[p_line].width > max_width) {
+					max_width = text[p_line].width;
+				} else if (p_hidden && text[p_line].width == max_width) {
+					_calculate_max_line_width();
+				}
+			}
+			bool is_hidden(int p_line) const { return text[p_line].hidden; }
+			void insert(int p_at, const Vector<String> &p_text, const Vector<Array> &p_bidi_override);
+			void insert_image(int p_at, Vector<String> &p_text, const Ref<Texture2D> &image, const Vector<Array> &p_bidi_override);
+
+			void remove_range(int p_from_line, int p_to_line);
+			int size() const { return text.size(); }
+			void clear();
+
+			void invalidate_cache(int p_line, int p_column = -1, bool p_text_changed = false, const String &p_ime_text = String(), const Array &p_bidi_override = Array());
+			void invalidate_font();
+			void invalidate_all();
+			void invalidate_all_lines();
+
+			_FORCE_INLINE_ const String &operator[](int p_line) const;
+
+			/* Gutters. */
+			void add_gutter(int p_at);
+			void remove_gutter(int p_gutter);
+			void move_gutters(int p_from_line, int p_to_line);
+
+			void set_line_gutter_metadata(int p_line, int p_gutter, const Variant &p_metadata) { text.write[p_line].gutters.write[p_gutter].metadata = p_metadata; }
+			const Variant &get_line_gutter_metadata(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].metadata; }
+
+			void set_line_gutter_text(int p_line, int p_gutter, const String &p_text) { text.write[p_line].gutters.write[p_gutter].text = p_text; }
+			const String &get_line_gutter_text(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].text; }
+
+			void set_line_gutter_icon(int p_line, int p_gutter, const Ref<Texture2D> &p_icon) { text.write[p_line].gutters.write[p_gutter].icon = p_icon; }
+			const Ref<Texture2D> &get_line_gutter_icon(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].icon; }
+
+			void set_line_gutter_item_color(int p_line, int p_gutter, const Color &p_color) { text.write[p_line].gutters.write[p_gutter].color = p_color; }
+			const Color &get_line_gutter_item_color(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].color; }
+
+			void set_line_gutter_clickable(int p_line, int p_gutter, bool p_clickable) { text.write[p_line].gutters.write[p_gutter].clickable = p_clickable; }
+			bool is_line_gutter_clickable(int p_line, int p_gutter) const { return text[p_line].gutters[p_gutter].clickable; }
+
+			/* Line style. */
+			void set_line_background_color(int p_line, const Color &p_color) { text.write[p_line].background_color = p_color; }
+			const Color get_line_background_color(int p_line) const { return text[p_line].background_color; }
+		};	
+	Text text;
 
 	static void _bind_methods();
 
