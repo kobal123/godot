@@ -12,7 +12,7 @@ void ImageTextEdit::_notification(int p_what) {
 
 
                                                           /*const String &p_text*/
-void ImageTextEdit::_base_insert_image(int p_line, int p_char, const Ref<Texture2D> &image, int &r_end_line, int &r_end_column) {
+void ImageTextEdit::_base_insert_image(int p_line, int p_char, Ref<TextImageTexture> image, int &r_end_line, int &r_end_column) {
 	// Save for undo.
 	ERR_FAIL_INDEX(p_line, text.size());
 	ERR_FAIL_COND(p_char < 0);
@@ -68,7 +68,7 @@ void ImageTextEdit::_base_insert_image(int p_line, int p_char, const Ref<Texture
 	emit_signal(SNAME("lines_edited_from"), p_line, r_end_line);
 }
 
-void ImageTextEdit::_insert_image(int p_line, int p_char, const Ref<Texture2D> &image, int *r_end_line, int *r_end_char) {
+void ImageTextEdit::_insert_image(int p_line, int p_char, Ref<TextImageTexture> image, int *r_end_line, int *r_end_char) {
 	if (!setting_text && idle_detect->is_inside_tree()) {
 		idle_detect->start();
 	}
@@ -128,9 +128,9 @@ void ImageTextEdit::_insert_image(int p_line, int p_char, const Ref<Texture2D> &
 	current_op.end_carets = carets;
 }
 
-void ImageTextEdit::insert_image_at_caret(const Ref<Texture2D> &image, int p_caret) {
+void ImageTextEdit::insert_image_at_caret(Ref<TextImageTexture> image, int p_caret) {
 	ERR_FAIL_COND(p_caret > carets.size());
-
+    
 	begin_complex_operation();
 	int from_line = 0;
     int from_col = 0;
@@ -148,6 +148,8 @@ void ImageTextEdit::insert_image_at_caret(const Ref<Texture2D> &image, int p_car
 		from_col = get_caret_column(i);
 
 		int new_column, new_line;
+        image->set_line(from_line);
+        image->set_col(from_col);
 		_insert_image(from_line, from_col, image, &new_line, &new_column);
 		_update_scrollbars();
 
@@ -171,8 +173,7 @@ void ImageTextEdit::insert_image_at_caret(const Ref<Texture2D> &image, int p_car
 
     // image_pos.insert(image->get_rid(), LinePos(from_line, from_col));
     
-    // image->col = from_col;
-    // image->line = from_line;
+
 	end_complex_operation();
 	queue_redraw();
 }

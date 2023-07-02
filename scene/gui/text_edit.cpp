@@ -40,6 +40,7 @@
 #include "core/string/string_builder.h"
 #include "core/string/translation.h"
 #include "label.h"
+#include <vector>
 
 #include "scene/main/window.h"
 
@@ -147,9 +148,9 @@ void TextEdit::Text::_calculate_line_height() {
 		}
 		height = MAX(height, l.height);
 	}
-	WARN_PRINT("LINE HEIGHT BEFORE: " + itos(line_height));
+	//WARN_PRINT("LINE HEIGHT BEFORE: " + itos(line_height));
 	line_height = height;
-	WARN_PRINT("LINE HEIGHT AFTER: " + itos(line_height));
+	//WARN_PRINT("LINE HEIGHT AFTER: " + itos(line_height));
 }
 
 void TextEdit::Text::_calculate_max_line_width() {
@@ -169,23 +170,326 @@ void TextEdit::Text::_calculate_max_line_width() {
 	max_width = line_width;
 }
 
+
+struct less_than_
+{
+_FORCE_INLINE_ bool operator()(const Ref<TextImageTexture> &t1, const Ref<TextImageTexture> &t2) const {
+
+			return t1->col < t2->col;
+		}
+
+};
+
+std::vector<int> findOccurrences(const String& inputString, const char32_t targetCharacter) {
+    std::vector<int> occurrences;
+
+    for (int i = 0; i < inputString.length(); ++i) {
+        if (inputString[i] == targetCharacter) {
+            occurrences.push_back(i);
+        }
+    }
+
+    return occurrences;
+}
+
+
+int number_of_occurrences(const String& inputString, const char32_t targetCharacter) {
+    int occurrences = 0;
+
+    for (int i = 0; i < inputString.length(); ++i) {
+        if (inputString[i] == targetCharacter) {
+            occurrences++;
+        }
+    }
+
+    return occurrences;
+}
+
+// void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_changed, const String &p_ime_text, const Array &p_bidi_override) {
+// 	ERR_FAIL_INDEX(p_line, text.size());
+
+// 	if (font.is_null()) {
+// 		return; // Not in tree?
+// 	}
+// 	Array objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
+
+// 	if (p_text_changed) {
+// 		text.write[p_line].data_buf->clear();
+
+// 	}
+
+
+// 	text.write[p_line].data_buf->set_width(width);
+// 	text.write[p_line].data_buf->set_direction((TextServer::Direction)direction);
+// 	text.write[p_line].data_buf->set_preserve_control(draw_control_chars);
+// 	if (p_ime_text.length() > 0) {
+// 		if (p_text_changed) {
+// 			text.write[p_line].data_buf->add_string(p_ime_text, font, font_size, language);
+// 		}
+// 		if (!p_bidi_override.is_empty()) {
+// 			TS->shaped_text_set_bidi_override(text.write[p_line].data_buf->get_rid(), p_bidi_override);
+// 		}
+// 	} else {
+// 		if (p_text_changed) {
+// 			if (objects.size() == 0) {
+// 				text.write[p_line].data_buf->add_string(text[p_line].data, font, font_size, language);
+// 			} else {
+// 				//split string on OBJ char.
+// 				PackedStringArray splits = text[p_line].data.split(String::chr(0xfffc), false);
+				
+
+// 				int obj_counter = 0;
+// 				int obj_size = objects.size();
+// 				for (int i = 0; i< splits.size(); i++) {
+// 					if (obj_counter < obj_size) {
+// 						text.write[p_line].data_buf->add_string(splits[i], font, font_size, language);
+// 						Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
+// 						text.write[p_line].data_buf->add_object(img, img->get_size());
+// 						obj_counter++;
+
+// 					} else {
+// 						text.write[p_line].data_buf->add_string(splits[i], font, font_size, language);
+// 					}
+					
+// 				}
+
+// 				for (int i = obj_counter; i < objects.size(); i++) {
+// 					Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
+// 					text.write[p_line].data_buf->add_object(img, img->get_size());
+// 				}
+// 			}
+// 		}
+// 		if (!text[p_line].bidi_override.is_empty()) {
+// 			TS->shaped_text_set_bidi_override(text.write[p_line].data_buf->get_rid(), text[p_line].bidi_override);
+// 		}
+// 	}
+
+// 	if (!p_text_changed) {
+// 		RID r = text.write[p_line].data_buf->get_rid();
+// 		int spans = TS->shaped_get_span_count(r);
+// 		for (int i = 0; i < spans; i++) {
+// 			TS->shaped_set_span_update_font(r, i, font->get_rids(), font_size, font->get_opentype_features());
+// 		}
+// 		for (int i = 0; i < TextServer::SPACING_MAX; i++) {
+// 			TS->shaped_text_set_spacing(r, TextServer::SpacingType(i), font->get_spacing(TextServer::SpacingType(i)));
+// 		}
+// 	}
+
+// 	// Apply tab align.
+// 	if (tab_size > 0) {
+// 		Vector<float> tabs;
+// 		tabs.push_back(font->get_char_size(' ', font_size).width * tab_size);
+// 		text.write[p_line].data_buf->tab_align(tabs);
+// 	}
+
+// 	// Update height.
+// 	const int old_height = text.write[p_line].height;
+// 	const int wrap_amount = get_line_wrap_amount(p_line);
+// 	int height = font_height;
+// 	for (int i = 0; i <= wrap_amount; i++) {
+// 		height = MAX(height, text[p_line].data_buf->get_line_size(i).y);
+// 	}
+// 	text.write[p_line].height = height;
+
+// 	// If this line has shrunk, this may no longer the the tallest line.
+// 	if (old_height == line_height && height < line_height) {
+// 		_calculate_line_height();
+// 	} else {
+// 		// //WARN_PRINT("INVALIDATE CACHE LINE HEIGHT BEFORE: " + itos(line_height));
+// 		line_height = MAX(height, line_height);
+// 		// //WARN_PRINT("INVALIDATE CACHE LINE HEIGHT AFTER: " + itos(line_height));
+// 	}
+
+// 	// Update width.
+// 	const int old_width = text.write[p_line].width;
+// 	int line_width = get_line_width(p_line);
+// 	text.write[p_line].width = line_width;
+
+// 	// If this line has shrunk, this may no longer the the longest line.
+// 	if (old_width == max_width && line_width < max_width) {
+// 		_calculate_max_line_width();
+// 	} else if (!is_hidden(p_line)) {
+// 		max_width = MAX(line_width, max_width);
+// 	}
+// }
+
+
+
+// void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_changed, const String &p_ime_text, const Array &p_bidi_override) {
+// 	ERR_FAIL_INDEX(p_line, text.size());
+
+// 	if (font.is_null()) {
+// 		return; // Not in tree?
+// 	}
+
+// 	RID line_rid = text.write[p_line].data_buf->get_rid();
+// 	Array objects = TS->shaped_text_get_objects(line_rid);
+// 	int obj_size = objects.size();
+
+// 	Vector<Ref<TextImageTexture>> textures;
+	
+// 	// textures.resize(obj_size);
+// 	// textures.reserve(objects.size());
+	
+
+// 	for (int i = 0; i < obj_size; i++) {
+// 		// textures.append(TS->shaped_text_get_object_rect(line_rid, objects[i]));
+// 		Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
+// 		textures.append(img);
+// 	}
+// 	if (0 < obj_size) {
+// 			WARN_PRINT("BEFORE SORT");
+
+// 	}
+// 	// textures.sort_custom(Callable(text_image_comparator.get_object_id(), "compare"));
+// 	textures.sort_custom<less_than_>();
+// 	if (p_text_changed) {
+// 		text.write[p_line].data_buf->clear();
+// 	}
+
+// 	if (0 < obj_size) {
+// 		WARN_PRINT("AFTER SORT");
+
+// 	}
+
+
+// 	text.write[p_line].data_buf->set_width(width);
+// 	text.write[p_line].data_buf->set_direction((TextServer::Direction)direction);
+// 	text.write[p_line].data_buf->set_preserve_control(draw_control_chars);
+	
+// 	if (p_ime_text.length() > 0) {
+// 		if (p_text_changed) {
+// 			text.write[p_line].data_buf->add_string(p_ime_text, font, font_size, language);
+// 		}
+// 		if (!p_bidi_override.is_empty()) {
+// 			TS->shaped_text_set_bidi_override(text.write[p_line].data_buf->get_rid(), p_bidi_override);
+// 		}
+// 	} else {
+// 		if (p_text_changed) {
+// 			if (obj_size == 0) {
+// 				text.write[p_line].data_buf->add_string(text[p_line].data, font, font_size, language);
+// 			} else {
+// 				//split string on OBJ char.
+// 				PackedStringArray splits = text[p_line].data.split(String::chr(0xfffc), false);
+// 				TypedArray<int> obj_char_occurrences = findOccurrences(text[p_line].data, 0xfffc);
+// 				for (int i = 0; i< obj_char_occurrences.size(); i++) {
+// 					WARN_PRINT("OBJ CHAR OCCURENCE: " + itos(obj_char_occurrences[i]));
+// 				}
+// 				int obj_counter = 0;
+// 				for (int i = 0; i < obj_size - 1; i++) {
+// 					if (obj_counter < obj_size) {
+// 						//TODO: This wont work if the first character is the OBJ char
+// 						// check this condition!
+						
+// 						text.write[p_line].data_buf->add_string(splits[i], font, font_size, language);
+// 						// Ref<TextImageTexture> img = Object::cast_to<TextImageTexture>(objects[i]);
+// 						// text.write[p_line].data_buf->add_object(img, img->get_size());
+// 						Ref<TextImageTexture> img = textures[i];
+// 						img->col = obj_char_occurrences[i];
+// 						text.write[p_line].data_buf->add_object(img, img->get_size(), INLINE_ALIGNMENT_BOTTOM);
+// 						obj_counter++;
+
+// 					} else {
+// 						text.write[p_line].data_buf->add_string(splits[i], font, font_size, language);
+// 					}
+					
+// 				}
+
+// 				for (int i = obj_counter; i < obj_size; i++) {
+// 					// Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
+// 					// text.write[p_line].data_buf->add_object(img, img->get_size());
+// 					Ref<TextImageTexture> img = textures[i];
+// 					img->col = obj_char_occurrences[i];
+// 					text.write[p_line].data_buf->add_object(img, img->get_size());
+// 				}
+// 			}
+// 		}
+// 		if (!text[p_line].bidi_override.is_empty()) {
+// 			TS->shaped_text_set_bidi_override(text.write[p_line].data_buf->get_rid(), text[p_line].bidi_override);
+// 		}
+// 	}
+
+// 	if (!p_text_changed) {
+// 		RID r = text.write[p_line].data_buf->get_rid();
+// 		int spans = TS->shaped_get_span_count(r);
+// 		for (int i = 0; i < spans; i++) {
+// 			TS->shaped_set_span_update_font(r, i, font->get_rids(), font_size, font->get_opentype_features());
+// 		}
+// 		for (int i = 0; i < TextServer::SPACING_MAX; i++) {
+// 			TS->shaped_text_set_spacing(r, TextServer::SpacingType(i), font->get_spacing(TextServer::SpacingType(i)));
+// 		}
+// 	}
+
+// 	// Apply tab align.
+// 	if (tab_size > 0) {
+// 		Vector<float> tabs;
+// 		tabs.push_back(font->get_char_size(' ', font_size).width * tab_size);
+// 		text.write[p_line].data_buf->tab_align(tabs);
+// 	}
+
+// 	// Update height.
+// 	const int old_height = text.write[p_line].height;
+// 	const int wrap_amount = get_line_wrap_amount(p_line);
+// 	int height = font_height;
+// 	for (int i = 0; i <= wrap_amount; i++) {
+// 		height = MAX(height, text[p_line].data_buf->get_line_size(i).y);
+// 	}
+// 	text.write[p_line].height = height;
+
+// 	// If this line has shrunk, this may no longer the the tallest line.
+// 	if (old_height == line_height && height < line_height) {
+// 		_calculate_line_height();
+// 	} else {
+// 		// WARN_PRINT("INVALIDATE CACHE LINE HEIGHT BEFORE: " + itos(line_height));
+// 		line_height = MAX(height, line_height);
+// 		// WARN_PRINT("INVALIDATE CACHE LINE HEIGHT AFTER: " + itos(line_height));
+// 	}
+
+// 	// Update width.
+// 	const int old_width = text.write[p_line].width;
+// 	int line_width = get_line_width(p_line);
+// 	text.write[p_line].width = line_width;
+
+// 	// If this line has shrunk, this may no longer the the longest line.
+// 	if (old_width == max_width && line_width < max_width) {
+// 		_calculate_max_line_width();
+// 	} else if (!is_hidden(p_line)) {
+// 		max_width = MAX(line_width, max_width);
+// 	}
+// }
+
+
 void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_changed, const String &p_ime_text, const Array &p_bidi_override) {
 	ERR_FAIL_INDEX(p_line, text.size());
 
 	if (font.is_null()) {
 		return; // Not in tree?
 	}
-	Array objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
 
-	if (p_text_changed) {
-		text.write[p_line].data_buf->clear();
+	RID line_rid = text.write[p_line].data_buf->get_rid();
+	Array objects = TS->shaped_text_get_objects(line_rid);
+	int obj_size = objects.size();
 
+	Vector<Ref<TextImageTexture>> textures;
+	
+
+	for (int i = 0; i < obj_size; i++) {
+		Ref<TextImageTexture> img = Object::cast_to<TextImageTexture>(objects[i]);
+		textures.append(img);
 	}
 
+	// textures.sort_custom(Callable(text_image_comparator.get_object_id(), "compare"));
+	// textures.sort_custom<less_than_>();
+	if (p_text_changed) {
+		text.write[p_line].data_buf->clear();
+	}
+
+	// objects.clear();
 
 	text.write[p_line].data_buf->set_width(width);
 	text.write[p_line].data_buf->set_direction((TextServer::Direction)direction);
 	text.write[p_line].data_buf->set_preserve_control(draw_control_chars);
+	
 	if (p_ime_text.length() > 0) {
 		if (p_text_changed) {
 			text.write[p_line].data_buf->add_string(p_ime_text, font, font_size, language);
@@ -195,32 +499,92 @@ void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_chan
 		}
 	} else {
 		if (p_text_changed) {
-			if (objects.size() == 0) {
+			// TypedArray<int> obj_occurrences = findOccurrences(text[p_line].data, 0xfffc);
+			std::vector<int> obj_occurrences = findOccurrences(text[p_line].data, 0xfffc);
+			
+			int obj_char_occ = obj_occurrences.size();
+			
+			// WARN_PRINT("############################################");
+			// WARN_PRINT("THERE ARE " + itos(obj_char_occ) + " IMAGES");			
+			// if there are 0 occurences, every image has been deleted from line
+			int added_objects = 0;
+			if (obj_char_occ == 0) {
 				text.write[p_line].data_buf->add_string(text[p_line].data, font, font_size, language);
-			} else {
-				//split string on OBJ char.
-				PackedStringArray splits = text[p_line].data.split(String::chr(0xfffc), false);
 				
+			} else {
+					int start = 0;
+					Ref<TextImageTexture> first_found = nullptr;
+					std::vector<bool> img_set(obj_char_occ, false);
+					// img_set.resize(obj_char_occ, false);
+					for (int i = 0; i < obj_char_occ; i++) {
+						int sub_len = obj_occurrences[i] - start;
+						
+						if (start == obj_occurrences[i]) {
+							int distance = 10000000;
+							int img_index = 0;
+							for (int k = obj_char_occ - 1; k >= 0; k--) {
+								if (!img_set[k] && Math::abs(obj_occurrences[i] - textures[k]->col) <= distance) {
+									distance = Math::abs(obj_occurrences[i] - textures[k]->col);
+									img_index = k;
+									added_objects++;
 
-				int obj_counter = 0;
-				int obj_size = objects.size();
-				for (int i = 0; i< splits.size(); i++) {
-					if (obj_counter < obj_size) {
-						text.write[p_line].data_buf->add_string(splits[i], font, font_size, language);
-						Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
-						text.write[p_line].data_buf->add_object(img, img->get_size());
-						obj_counter++;
+								}
+								
+								
+							}
+							img_set[img_index] = true;
 
-					} else {
-						text.write[p_line].data_buf->add_string(splits[i], font, font_size, language);
+							Ref<TextImageTexture> img_ = textures[img_index]; 
+							img_->col = obj_occurrences[i];
+							text.write[p_line].data_buf->add_object(img_, img_->get_size(), INLINE_ALIGNMENT_BOTTOM);
+							WARN_PRINT("FOR INDEX " + itos(i) + " IMAGE OF INDEX " + itos(img_index) + " WAS ADDED, WHICH WAS " + itos(distance) + " PLACES AWAY FROM " + itos(obj_occurrences[i]));							
+
+							start = obj_occurrences[i] + 1;
+							continue;
+						}
+						String s_data = text[p_line].data.substr(start, sub_len);
+						WARN_PRINT("SUBSTR LEN:  " + itos(start) + ", " + itos(sub_len));
+
+						if (s_data != "")
+						{
+							text.write[p_line].data_buf->add_string(s_data, font, font_size, language);
+							WARN_PRINT("ADDING TEXT: " + s_data);
+
+						}
+							
+						int distance = 10000000;
+						int img_index = 0;
+						for (int k = obj_char_occ - 1; k >= 0; k--) {
+							// WARN_PRINT("IMAGE COL: " + itos(textures[k]->col) + ", K is: " + itos(k));
+							// if (first_found == nullptr && textures[k]->col == obj_occurrences[k]) {
+							// 	first_found = textures[k];
+							// 	WARN_PRINT("ADDING IMAGE IN IF BRANCH, K IS: " + itos(k));
+							// 	text.write[p_line].data_buf->add_object(first_found, textures[k]->get_size(), INLINE_ALIGNMENT_BOTTOM);
+							// } else if (first_found != nullptr && textures[k] != first_found){
+							// 	WARN_PRINT("ADDING IMAGE IN ELSE BRANCH, AT POS: " + itos(k));
+							// 	text.write[p_line].data_buf->add_object(textures[k], textures[k]->get_size(), INLINE_ALIGNMENT_BOTTOM);
+							// }
+								// WARN_PRINT("IMAGE AT INDEX " + itos(k) + " IS " + itos(Math::abs(obj_occurrences[k] - textures[k]->col)) + " PLACES AWAY FROM THE CURRENT POSITION " + itos(obj_occurrences[k]));							
+							if (!img_set[k] && Math::abs(obj_occurrences[i] - textures[k]->col) <= distance ) {
+								distance = Math::abs(obj_occurrences[i] - textures[k]->col);
+								img_index = k;
+							}
+						}
+						img_set[img_index] = true;
+						WARN_PRINT("FOR INDEX " + itos(i) + " IMAGE OF INDEX " + itos(img_index) + " WAS ADDED, WHICH WAS " + itos(distance) + " PLACES AWAY FROM " + itos(obj_occurrences[i]));							
+
+						Ref<TextImageTexture> img_ = textures[img_index]; 
+						img_->col = obj_occurrences[i];
+						text.write[p_line].data_buf->add_object(img_, img_->get_size(), INLINE_ALIGNMENT_BOTTOM);
+						// WARN_PRINT("FOR IMAGE INDEX " + itos(i) + " ADDED")
+						added_objects++;
+						// print(s.substr(start, sub_len))
+						// print("adding image, pos:", r[i])
+						start = obj_occurrences[i] + 1;
 					}
-					
-				}
+				// }
+				WARN_PRINT("ADDED " + itos(added_objects) + " Images");							
 
-				for (int i = obj_counter; i < objects.size(); i++) {
-					Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
-					text.write[p_line].data_buf->add_object(img, img->get_size());
-				}
 			}
 		}
 		if (!text[p_line].bidi_override.is_empty()) {
@@ -362,22 +726,22 @@ void TextEdit::Text::set(int p_line, const String &p_text, const Array &p_bidi_o
 void TextEdit::Text::set_img(int p_line, const String &p_text, const Ref<Texture2D> &image, const Array &p_bidi_override) {
 	ERR_FAIL_INDEX(p_line, text.size());
 
-	text.write[p_line].data_buf->add_object(image, image->get_size());
+	text.write[p_line].data_buf->add_object(image, image->get_size(),INLINE_ALIGNMENT_BOTTOM);
 	Array objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
 
-	//WARN_PRINT("ADDED TEXTURE TO BUFFER FROM SET");
-	//WARN_PRINT("OBJECT ARRAY SIZE: " + itos(objects.size()));
+	////WARN_PRINT("ADDED TEXTURE TO BUFFER FROM SET");
+	////WARN_PRINT("OBJECT ARRAY SIZE: " + itos(objects.size()));
 	
-	//WARN_PRINT("LINE: " +  itos(p_line));
-	//WARN_PRINT("Line RID from setimg: " + itos(text.write[p_line].data_buf->get_rid().get_id()));
+	////WARN_PRINT("LINE: " +  itos(p_line));
+	////WARN_PRINT("Line RID from setimg: " + itos(text.write[p_line].data_buf->get_rid().get_id()));
 
-	// //WARN_PRINT("OBJECTS: " +  TS->shaped_text)
+	// ////WARN_PRINT("OBJECTS: " +  TS->shaped_text)
 	text.write[p_line].data = p_text;
 	text.write[p_line].bidi_override = p_bidi_override;
 	invalidate_cache(p_line, -1, true);
 	objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
 
-	//WARN_PRINT("OBJECT ARRAY SIZE AFTER CACHE INVALIDATION: " + itos(objects.size()));
+	////WARN_PRINT("OBJECT ARRAY SIZE AFTER CACHE INVALIDATION: " + itos(objects.size()));
 }
 
 void TextEdit::Text::insert(int p_at, const Vector<String> &p_text, const Vector<Array> &p_bidi_override) {
@@ -408,8 +772,8 @@ void TextEdit::Text::insert(int p_at, const Vector<String> &p_text, const Vector
 
 void TextEdit::Text::insert_image(int p_at, Vector<String> &p_text, const Ref<Texture2D> &image, const Vector<Array> &p_bidi_override){
 
-	//WARN_PRINT("Insert image called");
-	//WARN_PRINT("PTEXT SIZE: " + itos(p_text.size()));
+	////WARN_PRINT("Insert image called");
+	////WARN_PRINT("PTEXT SIZE: " + itos(p_text.size()));
 	int new_line_count = p_text.size() - 1;
 	if (new_line_count > 0) {
 		text.resize(text.size() + new_line_count);
@@ -424,11 +788,11 @@ void TextEdit::Text::insert_image(int p_at, Vector<String> &p_text, const Ref<Te
 	for (int i = 0; i < p_text.size(); i++) {
 		if (i == 0) {
 			// if (p_text[i] == String::chr(0xfffc)){
-				// //WARN_PRINT("String was fffc");
+				// ////WARN_PRINT("String was fffc");
 				set_img(p_at + i, p_text[i], image, p_bidi_override[i]);
 			// }else{
-			// 	//WARN_PRINT("String was not fffc");
-			// 	//WARN_PRINT(p_text[i]);
+			// 	////WARN_PRINT("String was not fffc");
+			// 	////WARN_PRINT(p_text[i]);
 			// 	set(p_at + i, p_text[i], p_bidi_override[i]);
 			
 			// }
@@ -437,16 +801,16 @@ void TextEdit::Text::insert_image(int p_at, Vector<String> &p_text, const Ref<Te
 		Line line;
 		line.gutters.resize(gutter_count);
 		line.data = p_text[i];
-		line.data_buf->add_object(image, image->get_size(), INLINE_ALIGNMENT_TO_BOTTOM);
+		line.data_buf->add_object(image, image->get_size(), INLINE_ALIGNMENT_BOTTOM);
 		
-		//WARN_PRINT("Line RID" + itos(line.data_buf->get_rid().get_id()));
-		//WARN_PRINT("ADDED TEXTURE TO BUFFER");
+		////WARN_PRINT("Line RID" + itos(line.data_buf->get_rid().get_id()));
+		////WARN_PRINT("ADDED TEXTURE TO BUFFER");
 
 		line.bidi_override = p_bidi_override[i];
 		text.write[p_at + i] = line;
 		invalidate_cache(p_at + i, -1, true);
 	}
-	//WARN_PRINT("Insert image finished");
+	////WARN_PRINT("Insert image finished");
 
 }
 
@@ -986,7 +1350,7 @@ void TextEdit::_notification(int p_what) {
 			line_drawing_cache.clear();
 			int row_height = draw_placeholder ? placeholder_line_height + line_spacing : 22;
 			int row_height2 = row_height;
-			WARN_PRINT("FIRST ROW HEIGTH: " + itos(row_height));
+			//WARN_PRINT("FIRST ROW HEIGTH: " + itos(row_height));
 			int line = first_vis_line;
 			int total_offs_y = 0;
 
@@ -1048,18 +1412,18 @@ void TextEdit::_notification(int p_what) {
 					if (i != 0 )
 					{
 						// row_height = ldata->get_line_ascent(0) + line_spacing;
-						row_height = MAX(ldata->get_line_ascent(0) + line_spacing, row_height2);
+						row_height = MAX(ldata->get_line_size(0).y + line_spacing, row_height2);
 					}
 						//row_height = ldata->get_line_size(0).y + line_spacing;
 						
 					total_offs_y += row_height;
 					// total_offs_y += ldata->get_line_ascent(0);
-					WARN_PRINT("---------------------------------------");
-					WARN_PRINT("LINE: " + itos(line));
-					WARN_PRINT("ROW HEIGHT: " + itos(row_height));
-					// WARN_PRINT("LDATA TOTAL ROW COUNT: " + itos(ldata->get_line_count()));
+					//WARN_PRINT("---------------------------------------");
+					//WARN_PRINT("LINE: " + itos(line));
+					// WARN_PRINT("ROW HEIGHT: " + itos(row_height));
+					// //WARN_PRINT("LDATA TOTAL ROW COUNT: " + itos(ldata->get_line_count()));
 					
-					WARN_PRINT("TOTAL OFS_Y : " + itos(total_offs_y));
+					//WARN_PRINT("TOTAL OFS_Y : " + itos(total_offs_y));
 
 					// ofs_y += i * row_height + line_spacing / 2;
 					ofs_y += total_offs_y + line_spacing / 2;
@@ -1211,7 +1575,12 @@ void TextEdit::_notification(int p_what) {
 							int sel_to = (line < get_selection_to_line(c)) ? TS->shaped_text_get_range(rid).y : get_selection_to_column(c);
 							Vector<Vector2> sel = TS->shaped_text_get_selection(rid, sel_from, sel_to);
 							for (int j = 0; j < sel.size(); j++) {
-								Rect2 rect = Rect2(sel[j].x + char_margin + ofs_x, ofs_y, sel[j].y - sel[j].x, row_height);
+								Rect2 rect;
+								if (row_height == 22)
+									rect = Rect2(sel[j].x + char_margin + ofs_x, ofs_y, sel[j].y - sel[j].x, row_height);
+								else
+									rect = Rect2(sel[j].x + char_margin + ofs_x, ofs_y - row_height + font->get_char_size('a', font_size).y, sel[j].y - sel[j].x, row_height);
+								
 								if (rect.position.x + rect.size.x <= xmargin_beg || rect.position.x > xmargin_end) {
 									continue;
 								}
@@ -1312,15 +1681,19 @@ void TextEdit::_notification(int p_what) {
 			
 
 					// ofs_y += (row_height - text_height) / 2;
-					WARN_PRINT("OFS_Y BEFORE BEFORE DRAWING: " + itos((row_height - text_height) / 2) );
+					// WARN_PRINT("OFS_Y BEFORE BEFORE DRAWING: " + itos(ofs_y));
 					const Glyph *glyphs = TS->shaped_text_get_glyphs(rid);
 					int gl_size = TS->shaped_text_get_glyph_count(rid);
-					WARN_PRINT("LINE ASCENT: " + itos(TS->shaped_text_get_ascent(rid)));
-					WARN_PRINT("LINE DESCENT: " + itos(TS->shaped_text_get_descent(rid)));
-					WARN_PRINT("LINE ASCENT: " + itos(ldata->get_line_ascent(0)));
-					WARN_PRINT("LINE DESCENT: " + itos(ldata->get_line_descent(0)));
-					ofs_y += ldata->get_line_ascent(line_wrap_index);
-					WARN_PRINT("OFS_Y BEFORE DRAWIN GLYPS: " + itos(ofs_y));
+					//WARN_PRINT("LINE ASCENT: " + itos(TS->shaped_text_get_ascent(rid)));
+					//WARN_PRINT("LINE DESCENT: " + itos(TS->shaped_text_get_descent(rid)));
+					//WARN_PRINT("LINE ASCENT: " + itos(ldata->get_line_ascent(0)));
+					//WARN_PRINT("LINE DESCENT: " + itos(ldata->get_line_descent(0)));
+					ofs_y += MIN(ldata->get_line_ascent(line_wrap_index), 18);
+					
+					// WARN_PRINT("HORIZONTAL SCROLL" + itos(h_scroll->get_value()));
+					// WARN_PRINT("VERTICAL SCROLL" + itos(v_scroll->get_value()));
+
+					// WARN_PRINT("OFS_Y BEFORE DRAWIN GLYPS: " + itos(ofs_y));
 					int first_visible_char = TS->shaped_text_get_range(rid).y;
 					int last_visible_char = TS->shaped_text_get_range(rid).x;
 
@@ -1418,14 +1791,14 @@ void TextEdit::_notification(int p_what) {
 							char_ofs += glyphs[j].advance;
 						}
 	
-						//WARN_PRINT("About to draw Objects");		
-						//WARN_PRINT("Line RID in main loop" + itos(rid.get_id()));		
-						//WARN_PRINT("para RID: " + itos(ldata->get_rid().get_id()));
+						////WARN_PRINT("About to draw Objects");		
+						////WARN_PRINT("Line RID in main loop" + itos(rid.get_id()));		
+						////WARN_PRINT("para RID: " + itos(ldata->get_rid().get_id()));
 						// Array objects = TS->shaped_text_get_objects(ldata->get_rid());
-						//WARN_PRINT("OBJECTS SIZE: " + itos(objects.size()));					
+						////WARN_PRINT("OBJECTS SIZE: " + itos(objects.size()));					
 
 						// for (int i = 0; i < objects.size(); i++) {
-						// 	//WARN_PRINT("DRAWING TEXTURE");					
+						// 	////WARN_PRINT("DRAWING TEXTURE");					
 
 						// 	// Ref<Texture2D> img = reinterpret_cast<Ref<Texture2D>>((uint64_t)objects[i]);
 						// 	Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
@@ -1436,11 +1809,11 @@ void TextEdit::_notification(int p_what) {
 						// 		// ItemImage *img = static_cast<ItemImage *>(it);
 						// 		// Vector2(char_margin + char_ofs + ofs_x + glyphs[j].x_off, ofs_y + glyphs[j].y_off)
 						// 		img->draw_rect(ci, Rect2(rect.position + Vector2(char_ofs + ofs_x, ofs_y), rect.size), false, Color(1.0f, 1.0f, 1.0f, 1.0f));
-						// 		WARN_PRINT("DRAWING IMAGE, LINE: " + itos(line));					
-						// 		WARN_PRINT("RECT POSITION: " + itos(rect.position.x) + ", " + itos(rect.position.y));
+						// 		//WARN_PRINT("DRAWING IMAGE, LINE: " + itos(line));					
+						// 		//WARN_PRINT("RECT POSITION: " + itos(rect.position.x) + ", " + itos(rect.position.y));
 
 						// 	}else{
-						// 		//WARN_PRINT("IMG WAS NULLPOINTER");					
+						// 		////WARN_PRINT("IMG WAS NULLPOINTER");					
 
 						// 	}
 						// }
@@ -1464,7 +1837,7 @@ void TextEdit::_notification(int p_what) {
 					bool was_object_drawn = objects.is_empty();
 
 					for (int i = 0; i < objects.size(); i++) {
-							//WARN_PRINT("DRAWING TEXTURE");					
+							////WARN_PRINT("DRAWING TEXTURE");					
 
 							// Ref<Texture2D> img = reinterpret_cast<Ref<Texture2D>>((uint64_t)objects[i]);
 							Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
@@ -1477,29 +1850,46 @@ void TextEdit::_notification(int p_what) {
 								int advance = 0;
 								float y_offset = 0.0f;
 								for (int j = 0; j < gl_size; j++) {
-									// WARN_PRINT("ADVANCE "+itos(j)+" : " + itos(glyphs[j].advance));
-									// WARN_PRINT("IMAGE WIDTH: " + itos(img->get_size().x));
+									// //WARN_PRINT("ADVANCE "+itos(j)+" : " + itos(glyphs[j].advance));
+									// //WARN_PRINT("IMAGE WIDTH: " + itos(img->get_size().x));
 									
 									if (glyphs[j].advance == img->get_size().x ) {
-										// WARN_PRINT("FOUND J: " + itos(j));
+										// //WARN_PRINT("FOUND J: " + itos(j));
 										// y_offset = img->get_size().y * 0.5f;
 										if (j - 2 <= 0){
-											// WARN_PRINT("J is less than or equal to 0");
+											// //WARN_PRINT("J is less than or equal to 0");
 											break;
 										} else {
-											// WARN_PRINT("SET ADVANCE TO: " + itos(glyphs[j-2].advance));
-											advance = glyphs[j-2].advance * 0.5f;
+											// //WARN_PRINT("SET ADVANCE TO: " + itos(glyphs[j-2].advance));
+											advance = glyphs[j-2].advance;
 											break;
 										}
 									}
 								}
-								img->draw_rect(ci, Rect2(rect.position + Vector2(ofs_x + advance, ofs_y - ldata->get_line_descent(0)), rect.size), false, Color(1.0f, 1.0f, 1.0f, 1.0f));
-								// WARN_PRINT("DRAWING IMAGE, LINE: " + itos(line));					
-								// WARN_PRINT("FINAL ADVANCE: " + itos(advance));
-								// WARN_PRINT("RECT POSITION: " + itos(rect.position.x) + ", " + itos(rect.position.y));
+
+								float horizontal_scroll = h_scroll->get_value();
+								float vertical_scroll = v_scroll->get_value();
+								Rect2 img_rect =  Rect2(rect.position + Vector2(ofs_x + advance - horizontal_scroll, ofs_y), rect.size);
+								Rect2 region = Rect2(0.0f, 0.0f, rect.size.x, rect.size.y);
+								
+								region.position += Vector2(horizontal_scroll, vertical_scroll);
+								
+								// img->draw_rect(ci, Rect2(rect.position + Vector2(ofs_x + advance, ofs_y), rect.size), false, Color(1.0f, 1.0f, 1.0f, 1.0f));
+
+								// if (img_rect.position.x - horizontal_scroll <= 0 &&  horizontal_scroll <= img_rect.get_end().x)
+								// 	img_rect.position.x = horizontal_scroll;
+								
+
+								// if (img_rect.position.x - horizontal_scroll <= 0 &&  horizontal_scroll <= img_rect.get_end().x)
+								// 	img_rect.position.x = horizontal_scroll;
+								
+								img->draw_rect_region(ci, img_rect, region, Color(1.0f, 1.0f, 1.0f, 1.0f), false);
+								// //WARN_PRINT("DRAWING IMAGE, LINE: " + itos(line));					
+								// //WARN_PRINT("FINAL ADVANCE: " + itos(advance));
+								// //WARN_PRINT("RECT POSITION: " + itos(rect.position.x) + ", " + itos(rect.position.y));
 
 							}else{
-								//WARN_PRINT("IMG WAS NULLPOINTER");					
+								////WARN_PRINT("IMG WAS NULLPOINTER");					
 
 							}
 						}
@@ -5007,7 +5397,7 @@ void TextEdit::set_caret_line(int p_line, bool p_adjust_viewport, bool p_can_be_
 				if (p_line - move_up > 0 && !_is_line_hidden(p_line - move_up)) {
 					p_line -= move_up;
 				} else {
-					//WARN_PRINT(("Caret set to hidden line " + itos(p_line) + " and there are no nonhidden lines."));
+					////WARN_PRINT(("Caret set to hidden line " + itos(p_line) + " and there are no nonhidden lines."));
 				}
 			}
 		}
@@ -7237,7 +7627,7 @@ int TextEdit::_get_column_x_offset_for_line(int p_char, int p_line, int p_column
 
 /* Selection */
 void TextEdit::_click_selection_held() {
-	// //WARNing: is_mouse_button_pressed(MouseButton::LEFT) returns false for double+ clicks, so this doesn't work for MODE_WORD
+	// ////WARNing: is_mouse_button_pressed(MouseButton::LEFT) returns false for double+ clicks, so this doesn't work for MODE_WORD
 	// and MODE_LINE. However, moving the mouse triggers _gui_input, which calls these functions too, so that's not a huge problem.
 	// I'm unsure if there's an actual fix that doesn't have a ton of side effects.
 	if (Input::get_singleton()->is_mouse_button_pressed(MouseButton::LEFT) && get_selection_mode() != SelectionMode::SELECTION_MODE_NONE) {
