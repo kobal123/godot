@@ -150,6 +150,18 @@ void ImageTextEdit::insert_image_at_caret(Ref<TextImageTexture> image, int p_car
 		int new_column, new_line;
         image->set_line(from_line);
         image->set_col(from_col);
+        RID line_rid = text.text.write[from_line].data_buf->get_rid();
+        
+        Array objects = TS->shaped_text_get_objects(line_rid);
+        int obj_size = objects.size();
+
+        for (int i = 0; i < obj_size; i++) {
+            Ref<TextImageTexture> img = Object::cast_to<TextImageTexture>(objects[i]);
+            if (from_col <= img->col ) 
+                img->col++;
+
+        }
+
 		_insert_image(from_line, from_col, image, &new_line, &new_column);
 		_update_scrollbars();
 

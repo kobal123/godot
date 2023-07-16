@@ -105,6 +105,10 @@ int TextEdit::Text::get_line_height() const {
 	return line_height;
 }
 
+float TextEdit::Text::get_line_height_(int p_line) const {
+	return MAX(text[p_line].data_buf->get_size().y, 27);
+}
+
 void TextEdit::Text::set_width(float p_width) {
 	width = p_width;
 }
@@ -458,6 +462,9 @@ int number_of_occurrences(const String& inputString, const char32_t targetCharac
 // 	}
 // }
 
+Array TextEdit::get_images(int p_line) const {
+	return TS->shaped_text_get_objects(text.text.write[p_line].data_buf->get_rid());
+}
 
 void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_changed, const String &p_ime_text, const Array &p_bidi_override) {
 	ERR_FAIL_INDEX(p_line, text.size());
@@ -485,6 +492,11 @@ void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_chan
 	}
 
 	// objects.clear();
+
+	for (int i = 0; i < textures.size(); i++) {
+		Vector2 s = textures[i]->get_size();
+		WARN_PRINT("IMAGE COL IN OBJECTS: " + itos(textures[i]->col) + " AT INDEX " + itos(i) + ", IMAGE WIDTH AND HEIGHT " + itos(s.x) + " " + itos(s.y));
+	}
 
 	text.write[p_line].data_buf->set_width(width);
 	text.write[p_line].data_buf->set_direction((TextServer::Direction)direction);
@@ -522,7 +534,8 @@ void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_chan
 						if (start == obj_occurrences[i]) {
 							int distance = 10000000;
 							int img_index = 0;
-							for (int k = obj_char_occ - 1; k >= 0; k--) {
+							// for (int k = obj_char_occ - 1; k >= 0; k--) {
+							for (int k = 0; k < obj_char_occ; k++) {	
 								if (!img_set[k] && Math::abs(obj_occurrences[i] - textures[k]->col) <= distance) {
 									distance = Math::abs(obj_occurrences[i] - textures[k]->col);
 									img_index = k;
@@ -538,7 +551,7 @@ void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_chan
 							img_->col = obj_occurrences[i];
 							text.write[p_line].data_buf->add_object(img_, img_->get_size(), INLINE_ALIGNMENT_BOTTOM);
 							WARN_PRINT("FOR INDEX " + itos(i) + " IMAGE OF INDEX " + itos(img_index) + " WAS ADDED, WHICH WAS " + itos(distance) + " PLACES AWAY FROM " + itos(obj_occurrences[i]));							
-
+							WARN_PRINT("IMAGE INFO: WIDTH - " + itos(img_->get_size().x) + ", HEIGHT - " + itos(img_->get_size().y));
 							start = obj_occurrences[i] + 1;
 							continue;
 						}
@@ -554,7 +567,9 @@ void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_chan
 							
 						int distance = 10000000;
 						int img_index = 0;
-						for (int k = obj_char_occ - 1; k >= 0; k--) {
+						// for (int k = obj_char_occ - 1; k >= 0; k--) {
+						for (int k = 0; k < obj_char_occ; k++) {
+
 							// WARN_PRINT("IMAGE COL: " + itos(textures[k]->col) + ", K is: " + itos(k));
 							// if (first_found == nullptr && textures[k]->col == obj_occurrences[k]) {
 							// 	first_found = textures[k];
@@ -576,13 +591,25 @@ void TextEdit::Text::invalidate_cache(int p_line, int p_column, bool p_text_chan
 						Ref<TextImageTexture> img_ = textures[img_index]; 
 						img_->col = obj_occurrences[i];
 						text.write[p_line].data_buf->add_object(img_, img_->get_size(), INLINE_ALIGNMENT_BOTTOM);
+						WARN_PRINT("IMAGE INFO: WIDTH - " + itos(img_->get_size().x) + ", HEIGHT - " + itos(img_->get_size().y));
+
 						// WARN_PRINT("FOR IMAGE INDEX " + itos(i) + " ADDED")
 						added_objects++;
 						// print(s.substr(start, sub_len))
 						// print("adding image, pos:", r[i])
 						start = obj_occurrences[i] + 1;
 					}
-				// }
+
+
+
+
+					String remainder = text[p_line].data.substr(start, text[p_line].data.length() - start);
+					if (remainder.length() != 0) {
+						text.write[p_line].data_buf->add_string(remainder, font, font_size, language);
+
+					} 
+					
+
 				WARN_PRINT("ADDED " + itos(added_objects) + " Images");							
 
 			}
@@ -723,11 +750,14 @@ void TextEdit::Text::set(int p_line, const String &p_text, const Array &p_bidi_o
 }
 
 
-void TextEdit::Text::set_img(int p_line, const String &p_text, const Ref<Texture2D> &image, const Array &p_bidi_override) {
+void TextEdit::Text::set_img(int p_line, const String &p_text, const Ref<TextImageTexture> &image, const Array &p_bidi_override) {
 	ERR_FAIL_INDEX(p_line, text.size());
 
 	text.write[p_line].data_buf->add_object(image, image->get_size(),INLINE_ALIGNMENT_BOTTOM);
-	Array objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
+	// Array objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
+
+
+
 
 	////WARN_PRINT("ADDED TEXTURE TO BUFFER FROM SET");
 	////WARN_PRINT("OBJECT ARRAY SIZE: " + itos(objects.size()));
@@ -739,7 +769,7 @@ void TextEdit::Text::set_img(int p_line, const String &p_text, const Ref<Texture
 	text.write[p_line].data = p_text;
 	text.write[p_line].bidi_override = p_bidi_override;
 	invalidate_cache(p_line, -1, true);
-	objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
+	// objects = TS->shaped_text_get_objects(text.write[p_line].data_buf->get_rid());
 
 	////WARN_PRINT("OBJECT ARRAY SIZE AFTER CACHE INVALIDATION: " + itos(objects.size()));
 }
@@ -769,6 +799,77 @@ void TextEdit::Text::insert(int p_at, const Vector<String> &p_text, const Vector
 		invalidate_cache(p_at + i, -1, true);
 	}
 }
+
+void TextEdit::Text::insert_img_new_line(int p_at, int from_col, const Vector<String> &p_text, const Vector<Array> &p_bidi_override) {
+	Ref<TextParagraph> para = text.write[p_at].data_buf;
+	Array objects =  TS->shaped_text_get_objects(para->get_rid());
+	int new_line_count = p_text.size() - 1;
+	if (new_line_count > 0) {
+		text.resize(text.size() + new_line_count);
+		for (int i = (text.size() - 1); i > p_at; i--) {
+			if ((i - new_line_count) <= 0) {
+				break;
+			}
+			text.write[i] = text[i - new_line_count];
+		}
+	}
+
+	// get images from p_at where column is greater than from_col
+	// Ref<TextParagraph> para = text.write[p_at].data_buf;
+	// Array objects =  TS->shaped_text_get_objects(para->get_rid());
+	Vector<Ref<TextImageTexture>> images;
+	
+	for (int i = 0; i < objects.size(); i++) {
+		Ref<TextImageTexture> img = Object::cast_to<TextImageTexture>(objects[i]);
+		if (from_col <= img->col)
+			images.append(img);
+	}
+	objects.clear();
+	// add images to the line they belong, in this case it's p_at + new_line_count
+	// get 0xfffc occurences in final line
+	// set each image column based on the occurences. The order cannot change
+
+	if (new_line_count == 0) {
+		for (int i = 0; i < images.size(); i++) {
+			Ref<TextImageTexture> img = images[i];
+			if (from_col <= img->col ) {
+				WARN_PRINT("IMAGE LINE1: " + itos(p_at + new_line_count) + ", COLUMN: " + itos(img->col));
+				img->col += p_text[0].length();
+			}
+				
+
+		}
+
+	}
+	
+	for (int i = 0; i < p_text.size(); i++) {
+		if (i == 0) {
+			set(p_at, p_text[i], p_bidi_override[i]);
+			continue;
+		}
+		Line line;
+		line.gutters.resize(gutter_count);
+		line.data = p_text[i];
+		line.bidi_override = p_bidi_override[i];
+
+		if (i == new_line_count) {
+			std::vector<int> occ = findOccurrences(p_text[i], 0xfffc);
+			
+			for (int k = 0; k < images.size(); k++) {
+				Ref<TextImageTexture> img = images[k];
+				img->col = occ[k];
+				img->line = p_at + new_line_count;
+				WARN_PRINT("IMAGE LINE2: " + itos(p_at + new_line_count) + ", COLUMN: " + itos(img->col));
+				line.data_buf->add_object(img, img->get_size());
+			}
+			 
+		}
+		text.write[p_at + i] = line;
+		invalidate_cache(p_at + i, -1, true);
+	}
+}
+
+
 
 void TextEdit::Text::insert_image(int p_at, Vector<String> &p_text, const Ref<Texture2D> &image, const Vector<Array> &p_bidi_override){
 
@@ -1348,11 +1449,23 @@ void TextEdit::_notification(int p_what) {
 
 			// Draw main text.
 			line_drawing_cache.clear();
-			int row_height = draw_placeholder ? placeholder_line_height + line_spacing : 22;
+			int row_height = draw_placeholder ? placeholder_line_height + line_spacing : 27;
 			int row_height2 = row_height;
 			//WARN_PRINT("FIRST ROW HEIGTH: " + itos(row_height));
 			int line = first_vis_line;
 			int total_offs_y = 0;
+
+
+
+			double total = get_v_scroll();
+
+			for (int asd = 0; asd < text.size(); asd++) {
+				if (asd == first_visible_line)
+					break;
+
+				total -= text.get_line_height_(asd);
+			}
+			bool was_subs = false;
 
 			for (int i = 0; i < draw_amount; i++) {
 				line++;
@@ -1381,6 +1494,7 @@ void TextEdit::_notification(int p_what) {
 				if (draw_placeholder) {
 					current_color = font_placeholder_color;
 				}
+				// WARN_PRINT("LINE: " + itos(line) + ", TOTAL IS: " + rtos(total));
 
 				const Ref<TextParagraph> ldata = draw_placeholder ? placeholder_data_buf : text.get_line_data(line);
 
@@ -1409,39 +1523,49 @@ void TextEdit::_notification(int p_what) {
 					}
 
 					row_height = line_spacing;
-					if (i != 0 )
-					{
+					// if (i != 0 )
+					// {
 						// row_height = ldata->get_line_ascent(0) + line_spacing;
 						row_height = MAX(ldata->get_line_size(0).y + line_spacing, row_height2);
-					}
+					// }
 						//row_height = ldata->get_line_size(0).y + line_spacing;
 						
 					total_offs_y += row_height;
 					// total_offs_y += ldata->get_line_ascent(0);
 					//WARN_PRINT("---------------------------------------");
-					//WARN_PRINT("LINE: " + itos(line));
+//					WARN_PRINT("LINE: " + itos(line) + ", LINE HEIGHT: " + itos(row_height));
 					// WARN_PRINT("ROW HEIGHT: " + itos(row_height));
 					// //WARN_PRINT("LDATA TOTAL ROW COUNT: " + itos(ldata->get_line_count()));
 					
 					//WARN_PRINT("TOTAL OFS_Y : " + itos(total_offs_y));
 
 					// ofs_y += i * row_height + line_spacing / 2;
+					if (!was_subs) {
+						// ofs_y -= floor(total);
+						total_offs_y -= floor(total);
+						was_subs = true;
+					}
 					ofs_y += total_offs_y + line_spacing / 2;
 					ofs_y -= first_visible_line_wrap_ofs * row_height;
-					ofs_y -= _get_v_scroll_offset() * row_height;
+
+
+
+					// ofs_y -= _get_v_scroll_offset() * ((int)get_v_scroll() % _get_control_height());
+
+						
 
 					bool clipped = false;
-					if (ofs_y + row_height < top_limit_y) {
+					// if (ofs_y + row_height < top_limit_y) {
 						// Line is outside the top margin, clip current line.
 						// Still need to go through the process to prepare color changes for next lines.
-						clipped = true;
-					}
+						// clipped = true;
+					// }
 
-					if (ofs_y > bottom_limit_y) {
-						// Line is outside the bottom margin, clip any remaining text.
-						i = draw_amount;
-						break;
-					}
+					// if (ofs_y > bottom_limit_y) {
+					// 	// Line is outside the bottom margin, clip any remaining text.
+					// 	i = draw_amount;
+					// 	break;
+					// }
 
 					if (text.get_line_background_color(line) != Color(0, 0, 0, 0)) {
 						if (rtl) {
@@ -1834,6 +1958,7 @@ void TextEdit::_notification(int p_what) {
 					cache_entry.first_visible_chars.push_back(first_visible_char);
 					cache_entry.last_visible_chars.push_back(last_visible_char);
 					Array objects = TS->shaped_text_get_objects(ldata->get_rid());
+					
 					bool was_object_drawn = objects.is_empty();
 
 					for (int i = 0; i < objects.size(); i++) {
@@ -1843,7 +1968,7 @@ void TextEdit::_notification(int p_what) {
 							Ref<Texture2D> img = Object::cast_to<Texture2D>(objects[i]);
 							
 							if (img != nullptr) {
-								Rect2 rect = TS->shaped_text_get_object_rect(rid, objects[i]);
+								Rect2 rect = TS->shaped_text_get_object_rect(ldata->get_rid(), objects[i]);
 								//draw_rect(rect, Color(1,0,0), false, 2); //DEBUG_RECTS
 								// ItemImage *img = static_cast<ItemImage *>(it);
 								// Vector2(char_margin + char_ofs + ofs_x + glyphs[j].x_off, ofs_y + glyphs[j].y_off)
@@ -1884,9 +2009,9 @@ void TextEdit::_notification(int p_what) {
 								// 	img_rect.position.x = horizontal_scroll;
 								
 								img->draw_rect_region(ci, img_rect, region, Color(1.0f, 1.0f, 1.0f, 1.0f), false);
-								// //WARN_PRINT("DRAWING IMAGE, LINE: " + itos(line));					
+								// WARN_PRINT("DRAWING IMAGE, LINE: " + itos(line));					
 								// //WARN_PRINT("FINAL ADVANCE: " + itos(advance));
-								// //WARN_PRINT("RECT POSITION: " + itos(rect.position.x) + ", " + itos(rect.position.y));
+								// WARN_PRINT("RECT POSITION: " + itos(img_rect.position.x) + ", " + itos(img_rect.position.y));
 
 							}else{
 								////WARN_PRINT("IMG WAS NULLPOINTER");					
@@ -2280,7 +2405,9 @@ void TextEdit::gui_input(const Ref<InputEvent> &p_gui_input) {
 					_scroll_up(15 * mb->get_factor());
 				} else if (v_scroll->is_visible()) {
 					// Scroll 3 lines.
-					_scroll_up(3 * mb->get_factor());
+					// _scroll_up(3 * mb->get_factor());
+					v_scroll->set_value(v_scroll->get_value() - v_scroll->get_page() * mb->get_factor() * 0.5 / 8);
+
 				}
 			}
 			if (mb->get_button_index() == MouseButton::WHEEL_DOWN && !mb->is_command_or_control_pressed()) {
@@ -2291,7 +2418,9 @@ void TextEdit::gui_input(const Ref<InputEvent> &p_gui_input) {
 					_scroll_down(15 * mb->get_factor());
 				} else if (v_scroll->is_visible()) {
 					// Scroll 3 lines.
-					_scroll_down(3 * mb->get_factor());
+					// _scroll_down(3 * mb->get_factor());
+					v_scroll->set_value(v_scroll->get_value() + v_scroll->get_page() * mb->get_factor() * 0.5 / 8);
+
 				}
 			}
 			if (mb->get_button_index() == MouseButton::WHEEL_LEFT) {
@@ -6055,7 +6184,40 @@ int TextEdit::get_last_full_visible_line_wrap_index() const {
 }
 
 int TextEdit::get_visible_line_count() const {
-	return _get_control_height() / get_line_height();
+
+	// get vertical scroll amount
+	// get height amount from line 0 up to v_scroll_amount
+	// from there count till amount >= control_height.
+	// return
+	int v_scroll_amount = get_v_scroll();
+
+	int ret = 0;
+	// if (v_scroll_amount == 0)
+	// 	return 
+
+	// WARN_PRINT("VSCROLL AMOUNT: " + itos(v_scroll_amount));
+	// WARN_PRINT("VSCROLL PAGE: " + rtos(v_scroll->get_page()));
+	
+	int h = _get_control_height();
+	// WARN_PRINT("CONTROL HEIGHT: " + itos(h));
+	int i;
+	for (i = first_visible_line; i < text.size(); i++) {
+		ret += (int)text.get_line_height_(i) + line_spacing;
+
+		if (ret >= h)
+		{
+
+			// WARN_PRINT("VISIBLE LINES ___: " + itos(i - first_visible_line + 1));
+
+			return MAX(i - first_visible_line, 1) ;
+		}
+	}
+			// WARN_PRINT("VISIBLE LINES ___: " + itos(i - first_visible_line + 1));
+			
+	return MAX(i - first_visible_line, 1);
+	
+
+	// return _get_control_height() / get_line_height();
 }
 
 int TextEdit::get_visible_line_count_in_range(int p_from_line, int p_to_line) const {
@@ -6631,6 +6793,7 @@ void TextEdit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_middle_mouse_paste_enabled"), &TextEdit::is_middle_mouse_paste_enabled);
 
 	// Text manipulation
+	ClassDB::bind_method(D_METHOD("get_images", "line"), &TextEdit::get_images);
 	ClassDB::bind_method(D_METHOD("clear"), &TextEdit::clear);
 
 	ClassDB::bind_method(D_METHOD("set_text", "text"), &TextEdit::set_text);
@@ -7849,10 +8012,25 @@ void TextEdit::_update_scrollbars() {
 
 	if (total_rows > visible_rows) {
 		v_scroll->show();
-		v_scroll->set_max(total_rows + _get_visible_lines_offset());
-		v_scroll->set_page(visible_rows + _get_visible_lines_offset());
+		
+		double total = 0.0f;
+		for (int i = 0; i < text.size(); i++) {
+			total += text.get_line_height_(i) + line_spacing;
+	
+		}
+		
+		// v_scroll->set_max(total_rows + _get_visible_lines_offset());
+		v_scroll->set_max(total);
+		
+		// v_scroll->set_page(visible_rows + _get_visible_lines_offset());
+		v_scroll->set_page((double)_get_control_height());
+
+		// WARN_PRINT("VSCROLL MAX: " + rtos(total_rows + _get_visible_lines_offset()));
+		// WARN_PRINT("VSCROLL PAGE: " + rtos(visible_rows + _get_visible_lines_offset()));
+		// WARN_PRINT("FIRST VISIBLE LINE: " + itos(first_visible_line));
+
 		if (smooth_scroll_enabled) {
-			v_scroll->set_step(0.25);
+			v_scroll->set_step(0);
 		} else {
 			v_scroll->set_step(1);
 		}
@@ -7930,8 +8108,20 @@ void TextEdit::_scroll_moved(double p_to_val) {
 		int wi = line_wrap_amount - (sc - v_scroll_i - 1);
 		wi = CLAMP(wi, 0, line_wrap_amount);
 
+
+		int total = 0;
+		for (n_line = 0; n_line < text.size(); n_line++) {
+			v_scroll_i -= floor(text.get_line_height_(n_line));
+			
+			if (v_scroll_i <= 0)
+				break;
+		}
+
+
+
 		first_visible_line = n_line;
 		first_visible_line_wrap_ofs = wi;
+		// WARN_PRINT("FIRST VISIBLE LINE: " + itos(first_visible_line));
 	}
 	queue_redraw();
 }
@@ -7960,6 +8150,9 @@ void TextEdit::_scroll_up(real_t p_delta) {
 	} else {
 		target_v_scroll = (get_v_scroll() - p_delta);
 	}
+
+
+	// WARN_PRINT("SCROLLING UP, TARGET V SCROLL: " + rtos(target_v_scroll));
 
 	if (smooth_scroll_enabled) {
 		if (target_v_scroll <= 0) {
@@ -8007,6 +8200,7 @@ void TextEdit::_scroll_down(real_t p_delta) {
 void TextEdit::_scroll_lines_up() {
 	scrolling = false;
 	minimap_clicked = false;
+	// WARN_PRINT("SCROLLING UP: ");
 
 	// Adjust the vertical scroll.
 	set_v_scroll(get_v_scroll() - 1);
@@ -8018,6 +8212,7 @@ void TextEdit::_scroll_lines_up() {
 		}
 
 		int last_vis_line = get_last_full_visible_line();
+		// WARN_PRINT("LAST VISIBLE LINE: " + itos(last_vis_line));
 		int last_vis_wrap = get_last_full_visible_line_wrap_index();
 		if (get_caret_line(i) > last_vis_line || (get_caret_line(i) == last_vis_line && get_caret_wrap_index(i) > last_vis_wrap)) {
 			set_caret_line(last_vis_line, false, false, last_vis_wrap, i);
@@ -8029,7 +8224,7 @@ void TextEdit::_scroll_lines_up() {
 void TextEdit::_scroll_lines_down() {
 	scrolling = false;
 	minimap_clicked = false;
-
+	// WARN_PRINT("SCROLLING DOWN: ");
 	// Adjust the vertical scroll.
 	set_v_scroll(get_v_scroll() + 1);
 
@@ -8158,6 +8353,21 @@ void TextEdit::_insert_text(int p_line, int p_char, const String &p_text, int *r
 	}
 
 	int retline, retchar;
+
+
+	// RID line_rid = text.text.write[p_line].data_buf->get_rid();
+	
+	// Array objects = TS->shaped_text_get_objects(line_rid);
+	// int obj_size = objects.size();
+
+	// for (int i = 0; i < obj_size; i++) {
+	// 	Ref<TextImageTexture> img = Object::cast_to<TextImageTexture>(objects[i]);
+	// 	if (p_char <= img->col ) 
+	// 		img->col += p_text.length();
+
+	// }
+
+
 	_base_insert_text(p_line, p_char, p_text, retline, retchar);
 	if (r_end_line) {
 		*r_end_line = retline;
@@ -8267,7 +8477,7 @@ void TextEdit::_base_insert_text(int p_line, int p_char, const String &p_text, i
 	ERR_FAIL_COND(p_char < 0);
 
 	/* STEP 1: Remove \r from source text and separate in substrings. */
-	const String text_to_insert = p_text.replace("\r", "");
+	const String text_to_insert = p_text.replace("\r", "").replace(String::chr(0xfffc),""); // MIGHT BE WRONG!!
 	Vector<String> substrings = text_to_insert.split("\n");
 
 	// Is this just a new empty line?
@@ -8281,6 +8491,7 @@ void TextEdit::_base_insert_text(int p_line, int p_char, const String &p_text, i
 	/* STEP 3: Separate dest string in pre and post text. */
 	String postinsert_text = text[p_line].substr(p_char, text[p_line].size());
 
+
 	substrings.write[0] = text[p_line].substr(0, p_char) + substrings[0];
 	substrings.write[substrings.size() - 1] += postinsert_text;
 
@@ -8290,7 +8501,7 @@ void TextEdit::_base_insert_text(int p_line, int p_char, const String &p_text, i
 		bidi_override.write[i] = structured_text_parser(st_parser, st_args, substrings[i]);
 	}
 
-	text.insert(p_line, substrings, bidi_override);
+	text.insert_img_new_line(p_line, p_char, substrings, bidi_override);
 
 	if (shift_first_line) {
 		text.move_gutters(p_line, p_line + 1);
@@ -8350,8 +8561,51 @@ void TextEdit::_base_remove_text(int p_from_line, int p_from_column, int p_to_li
 	String pre_text = text[p_from_line].substr(0, p_from_column);
 	String post_text = text[p_to_line].substr(p_to_column, text[p_to_line].length());
 
+	WARN_PRINT("REMOVING FROM LINE COL " + itos(p_from_line) + " - " + itos(p_from_column) + "  TO LINE COL " + itos(p_to_line) + " - " + itos(p_to_column));
+
+	// get images from p_at where column is greater than from_col
+	Ref<TextParagraph> para = text.text.write[p_to_line].data_buf;
+	Array objects =  TS->shaped_text_get_objects(para->get_rid());
+	Vector<Ref<TextImageTexture>> images;
+	
+	for (int i = 0; i < objects.size(); i++) {
+		Ref<TextImageTexture> img = Object::cast_to<TextImageTexture>(objects[i]);
+		if (p_to_column <= img->col)
+			images.append(img);
+	}
+	objects.clear();
+
+	String to_set = pre_text + post_text;
+
+	std::vector<int> occ = findOccurrences(to_set, 0xfffc);
+	
+	int image_occ_index = 0;
+
+	for (int k = 0; k < occ.size(); k++) {
+		if (p_from_column <= occ[k]) {
+			image_occ_index = k;
+			break;
+		}
+	}
+
+	// WARN_PRINT("IMD OCC INDEX: " + itos(image_occ_index));
+	// WARN_PRINT("IMAGES SIZE: " + itos(images.size()));
+	
+
+	for (int i = 0; i < images.size(); i++) {
+		Ref<TextImageTexture> img = images[i];
+		img->col = occ[image_occ_index];
+
+		img->line = p_from_line;
+		text.text.write[p_from_line].data_buf->add_object(img, img->get_size());
+		image_occ_index++;
+	}
+			 
+		
+
+
 	text.remove_range(p_from_line, p_to_line);
-	text.set(p_from_line, pre_text + post_text, structured_text_parser(st_parser, st_args, pre_text + post_text));
+	text.set(p_from_line, to_set, structured_text_parser(st_parser, st_args, pre_text + post_text));
 
 	if (!text_changed_dirty && !setting_text) {
 		if (is_inside_tree()) {

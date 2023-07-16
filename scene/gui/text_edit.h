@@ -516,12 +516,12 @@ protected:
 					data_buf.instantiate();
 				}
 			};
+		mutable Vector<Line> text;
 
 		private:
 			bool is_dirty = false;
 			bool tab_size_dirty = false;
 
-			mutable Vector<Line> text;
 			Ref<Font> font;
 			int font_size = -1;
 			int font_height = 0;
@@ -549,6 +549,8 @@ protected:
 			void set_draw_control_chars(bool p_enabled);
 
 			int get_line_height() const;
+			float get_line_height_(int p_line) const;
+
 			int get_line_width(int p_line, int p_wrap_index = -1) const;
 			int get_max_width() const;
 
@@ -560,7 +562,7 @@ protected:
 			const Ref<TextParagraph> get_line_data(int p_line) const;
 
 			void set(int p_line, const String &p_text, const Array &p_bidi_override);
-			void set_img(int p_line, const String &p_text, const Ref<Texture2D> &img, const Array &p_bidi_override);
+			void set_img(int p_line, const String &p_text, const Ref<TextImageTexture> &img, const Array &p_bidi_override);
 
 			void set_hidden(int p_line, bool p_hidden) {
 				if (text[p_line].hidden == p_hidden) {
@@ -576,6 +578,7 @@ protected:
 			bool is_hidden(int p_line) const { return text[p_line].hidden; }
 			void insert(int p_at, const Vector<String> &p_text, const Vector<Array> &p_bidi_override);
 			void insert_image(int p_at, Vector<String> &p_text, const Ref<Texture2D> &image, const Vector<Array> &p_bidi_override);
+			void insert_img_new_line(int p_line, int p_col, const Vector<String> &p_text, const Vector<Array> &p_bidi_override);
 
 			void remove_range(int p_from_line, int p_to_line);
 			int size() const { return text.size(); }
@@ -613,7 +616,7 @@ protected:
 			const Color get_line_background_color(int p_line) const { return text[p_line].background_color; }
 		};	
 	Text text;
-
+	
 	static void _bind_methods();
 
 	/* Internal API for CodeEdit, pending public API. */
@@ -637,6 +640,8 @@ protected:
 	Ref<Texture2D> folded_eol_icon;
 
 	bool hiding_enabled = false;
+
+	Array get_images(int p_line) const;
 
 	void _set_hiding_enabled(bool p_enabled);
 	bool _is_hiding_enabled() const;
@@ -721,7 +726,7 @@ public:
 
 	// Text manipulation
 	void clear();
-
+	
 	void set_text(const String &p_text);
 	String get_text() const;
 
