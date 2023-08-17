@@ -12,13 +12,13 @@ void ImageTextEdit::_notification(int p_what) {
 
 
                                                           /*const String &p_text*/
-void ImageTextEdit::_base_insert_image(int p_line, int p_char, Ref<TextImageTexture> image, int &r_end_line, int &r_end_column) {
+void ImageTextEdit::_base_insert_image(int p_line, int p_char, Ref<TextImageTexture> image, int &r_end_line, int &r_end_column, bool should_insert_char) {
 	// Save for undo.
 	ERR_FAIL_INDEX(p_line, text.size());
 	ERR_FAIL_COND(p_char < 0);
 
 	/* STEP 1: Remove \r from source text and separate in substrings. */
-	const String text_to_insert = String::chr(0xfffc);
+	const String text_to_insert = should_insert_char ? String::chr(0xfffc) : String();
     // const String text_to_insert = String();
 	Vector<String> substrings = text_to_insert.split("\n");
 
@@ -68,7 +68,7 @@ void ImageTextEdit::_base_insert_image(int p_line, int p_char, Ref<TextImageText
 	emit_signal(SNAME("lines_edited_from"), p_line, r_end_line);
 }
 
-void ImageTextEdit::_insert_image(int p_line, int p_char, Ref<TextImageTexture> image, int *r_end_line, int *r_end_char) {
+void ImageTextEdit::_insert_image(int p_line, int p_char, Ref<TextImageTexture> image, int *r_end_line, int *r_end_char, bool should_insert_char) {
 	if (!setting_text && idle_detect->is_inside_tree()) {
 		idle_detect->start();
 	}
@@ -78,7 +78,7 @@ void ImageTextEdit::_insert_image(int p_line, int p_char, Ref<TextImageTexture> 
 	}
 
 	int retline, retchar;
-	_base_insert_image(p_line, p_char, image, retline, retchar);
+	_base_insert_image(p_line, p_char, image, retline, retchar, should_insert_char);
 	if (r_end_line) {
 		*r_end_line = retline;
 	}
@@ -128,7 +128,7 @@ void ImageTextEdit::_insert_image(int p_line, int p_char, Ref<TextImageTexture> 
 	current_op.end_carets = carets;
 }
 
-void ImageTextEdit::insert_image_at_caret(Ref<TextImageTexture> image, int p_caret) {
+void ImageTextEdit::insert_image_at_caret(Ref<TextImageTexture> image, int p_caret, bool should_insert_char) {
 	ERR_FAIL_COND(p_caret > carets.size());
     
 	begin_complex_operation();
@@ -162,7 +162,7 @@ void ImageTextEdit::insert_image_at_caret(Ref<TextImageTexture> image, int p_car
 
         }
 
-		_insert_image(from_line, from_col, image, &new_line, &new_column);
+		_insert_image(from_line, from_col, image, &new_line, &new_column, should_insert_char);
 		_update_scrollbars();
 
 		set_caret_line(new_line, false, true, 0, i);
@@ -192,7 +192,7 @@ void ImageTextEdit::insert_image_at_caret(Ref<TextImageTexture> image, int p_car
 
 
 void ImageTextEdit::_bind_methods() {
-    ClassDB::bind_method(D_METHOD("insert_image_at_caret", "image", "caret_index"), &ImageTextEdit::insert_image_at_caret);
+    ClassDB::bind_method(D_METHOD("insert_image_at_caret", "image", "caret_index", "insert_char"), &ImageTextEdit::insert_image_at_caret);
 
 
 }

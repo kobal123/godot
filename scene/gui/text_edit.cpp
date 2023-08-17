@@ -1533,7 +1533,7 @@ void TextEdit::_notification(int p_what) {
 					total_offs_y += row_height;
 					// total_offs_y += ldata->get_line_ascent(0);
 					//WARN_PRINT("---------------------------------------");
-//					WARN_PRINT("LINE: " + itos(line) + ", LINE HEIGHT: " + itos(row_height));
+					//WARN_PRINT("LINE: " + itos(line) + ", LINE HEIGHT: " + itos(row_height));
 					// WARN_PRINT("ROW HEIGHT: " + itos(row_height));
 					// //WARN_PRINT("LDATA TOTAL ROW COUNT: " + itos(ldata->get_line_count()));
 					
@@ -6114,13 +6114,33 @@ double TextEdit::get_scroll_pos_for_line(int p_line, int p_wrap_index) const {
 	ERR_FAIL_COND_V(p_wrap_index > get_line_wrap_count(p_line), 0);
 
 	if (get_line_wrapping_mode() == LineWrappingMode::LINE_WRAPPING_NONE && !_is_hiding_enabled()) {
-		return p_line;
+		double new_line_scroll_pos = 0.0;
+		for (int i = 0; i < p_line; i++) {
+			new_line_scroll_pos += text.get_line_height_(i) + line_spacing;
+		}
+		return new_line_scroll_pos;
 	}
 
+
 	double new_line_scroll_pos = 0.0;
+
 	if (p_line > 0) {
-		new_line_scroll_pos = get_visible_line_count_in_range(0, MIN(p_line - 1, text.size() - 1));
+		//new_line_scroll_pos = get_visible_line_count_in_range(0, MIN(p_line - 1, text.size() - 1));
+		for (int i = 0; i < p_line; i++) {
+			new_line_scroll_pos += text.get_line_height_(i) + line_spacing;
+/*
+			if (ret >= h)
+			{
+
+				// WARN_PRINT("VISIBLE LINES ___: " + itos(i - first_visible_line + 1));
+
+				return MAX(i - first_visible_line, 1) ;
+			}
+*/
+		}
+
 	}
+	
 	new_line_scroll_pos += p_wrap_index;
 	return new_line_scroll_pos;
 }

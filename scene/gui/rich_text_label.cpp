@@ -1841,7 +1841,7 @@ void RichTextLabel::_notification(int p_what) {
 			// Draw main text.
 			Rect2 text_rect = _get_text_rect();
 			float vofs = vscroll->get_value();
-
+			// WARN_PRINT("VOFS IS " + rtos(vofs));
 			// Search for the first line.
 			int to_line = main->first_invalid_line.load();
 			int from_line = _find_first_line(0, to_line, vofs);
